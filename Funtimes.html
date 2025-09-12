@@ -516,7 +516,51 @@
     // debug button: manual refresh and brief feedback animation
     const debugBtn = document.getElementById('debugBtn');
     const celebrationEl = document.getElementById('celebration');
+// Run celebration for 1 full minute (repeated bursts)
+function startMinuteCelebration() {
+  if (!celebrationEl) return;
 
+  const interval = 1000; // one burst per second (adjust to taste)
+  const totalDuration = 60 * 1000; // one minute
+  const endTime = Date.now() + totalDuration;
+
+  const loop = setInterval(() => {
+    triggerCelebration({ count: 24 }); // smaller bursts each second
+    if (Date.now() >= endTime) {
+      clearInterval(loop);
+    }
+  }, interval);
+}
+
+// simple confetti burst - unchanged
+function triggerCelebration({count = 36} = {}) {
+  if (!celebrationEl) return;
+  const colors = ['#ffd166','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
+  const frag = document.createDocumentFragment();
+  const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    const w = 6 + Math.round(Math.random()*10);
+    const h = 10 + Math.round(Math.random()*18);
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const left = 20 + Math.random() * 60; // percent
+    el.style.left = left + '%';
+    const delay = Math.random() * 300;
+    const duration = 900 + Math.random() * 700;
+    el.style.animation = `confetti-fall ${duration}ms cubic-bezier(.2,.7,.2,1) ${delay}ms forwards`;
+    el.style.transform = `rotate(${Math.floor(Math.random()*360)}deg)`;
+    el.style.transformOrigin = `${Math.random()*100}% ${Math.random()*100}%`;
+    frag.appendChild(el);
+    setTimeout(() => el.remove(), duration + delay + 100);
+  }
+  celebrationEl.appendChild(frag);
+}
+
+
+    
    // simple confetti burst - creates many small colored bars that fall and rotate
    function triggerCelebration({count = 36} = {}) {
      if (!celebrationEl) return;
