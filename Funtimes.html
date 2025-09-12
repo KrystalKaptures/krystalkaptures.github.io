@@ -239,7 +239,7 @@
 
       // center dot
       ctx.beginPath();
-      ctx.fillStyle = '#ffd166';
+      ctx.fillStyle = '#66D1FF';
       ctx.arc(cx,cy,5,0,Math.PI*2);
       ctx.fill();
     }
@@ -254,7 +254,7 @@
       // hour hand
       ctx.beginPath();
       ctx.lineCap = 'round';
-      ctx.strokeStyle = '#ffd166';
+      ctx.strokeStyle = '#66D1FF';
       ctx.lineWidth = Math.max(6, radius*0.06);
       ctx.moveTo(cx - Math.cos(rHour)*10, cy - Math.sin(rHour)*10);
       ctx.lineTo(cx + Math.cos(rHour)*(radius*0.5), cy + Math.sin(rHour)*(radius*0.5));
@@ -319,7 +319,7 @@
 
       // center dot
       ctxNoSec.beginPath();
-      ctxNoSec.fillStyle = '#ffd166';
+      ctxNoSec.fillStyle = '#66D1FF';
       ctxNoSec.arc(cxNS,cyNS,4,0,Math.PI*2);
       ctxNoSec.fill();
     }
@@ -332,7 +332,7 @@
       // hour hand
       ctxNoSec.beginPath();
       ctxNoSec.lineCap = 'round';
-      ctxNoSec.strokeStyle = '#ffd166';
+      ctxNoSec.strokeStyle = '#66D1FF';
       ctxNoSec.lineWidth = Math.max(5, radiusNS*0.06);
       ctxNoSec.moveTo(cxNS - Math.cos(rHour)*8, cyNS - Math.sin(rHour)*8);
       ctxNoSec.lineTo(cxNS + Math.cos(rHour)*(radiusNS*0.48), cyNS + Math.sin(rHour)*(radiusNS*0.48));
@@ -535,7 +535,7 @@ function startMinuteCelebration() {
 // simple confetti burst - unchanged
 function triggerCelebration({count = 36} = {}) {
   if (!celebrationEl) return;
-  const colors = ['#ffd166','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
+  const colors = ['#66D1FF','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
   const frag = document.createDocumentFragment();
   const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
   for (let i = 0; i < count; i++) {
@@ -564,7 +564,7 @@ function triggerCelebration({count = 36} = {}) {
    // simple confetti burst - creates many small colored bars that fall and rotate
    function triggerCelebration({count = 36} = {}) {
      if (!celebrationEl) return;
-     const colors = ['#ffd166','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
+     const colors = ['#66D1FF','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
      const frag = document.createDocumentFragment();
      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
      for (let i = 0; i < count; i++) {
