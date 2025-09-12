@@ -83,14 +83,13 @@
     const lastTriggered = new Map();
     let celebrationActive = false;
 
+    // === timestamped debug logging ===
     function getTimestamp() {
       const now = new Date();
       return now.toTimeString().split(' ')[0]; // HH:MM:SS
     }
-
     function logDebug(msg) {
-      const stamp = getTimestamp();
-      const line = `[${stamp}] ${msg}`;
+      const line = `[${getTimestamp()}] ${msg}`;
       console.log(line);
       if (debugConsole) {
         debugConsole.value += line + "\n";
@@ -98,12 +97,55 @@
       }
     }
 
-    function maybeTrigger(name, value, opts = {}) {
+    // === NEW: celebration / detection helpers ===
+    function angDiff(a,b){
+      return Math.abs(((a - b + 180) % 360) - 180);
+    }
+    function areColinear3(a,b,c,eps=2){
+      const ab = angDiff(a,b), ac = angDiff(a,c), bc = angDiff(b,c);
+      const close = x => x <= eps || Math.abs(x - 180) <= eps;
+      return close(ab) && close(ac) && close(bc);
+    }
+    function stripCols(s){ return s.replace(/:/g,''); }
+    function isPalindrome(s){
+      const t = stripCols(s);
+      return t === t.split('').reverse().join('');
+    }
+    function isSymmetrical(s){
+      const t = stripCols(s);
+      if (t.length % 2 !== 0) return false;
+      const half = t.length/2;
+      const left = t.slice(0,half);
+      const right = t.slice(half);
+      return left === right.split('').reverse().join('');
+    }
+    function isRepeatingPattern(s){
+      const t = stripCols(s);
+      const n = t.length;
+      for (let len = 1; len <= Math.floor(n/2); len++){
+        if (n % len !== 0) continue;
+        const part = t.slice(0,len);
+        if (part.repeat(n/len) === t) return true;
+      }
+      return false;
+    }
+    function isRunOfNumbers(s){
+      const t = stripCols(s);
+      if (t.length < 3) return false;
+      for (let i = 1; i < t.length; i++){
+        const prev = parseInt(t[i-1],10), cur = parseInt(t[i],10);
+        if (Number.isNaN(prev) || Number.isNaN(cur)) return false;
+        if (((prev + 1) % 10) !== cur) return false;
+      }
+      return true;
+    }
+
+    // === celebration control ===
+    function maybeTrigger(name, value) {
       const prev = lastTriggered.get(name);
       if (prev === value) return;
       lastTriggered.set(name, value);
       logDebug(`${name} => ${value}`);
-
       if (celebrationActive) {
         logDebug('celebration already active, skipping new trigger');
         return;
@@ -111,18 +153,18 @@
       startMinuteCelebration();
     }
 
-    // Run celebration for 1 full minute (repeated bursts)
     function startMinuteCelebration() {
       if (!celebrationEl || celebrationActive) return;
       celebrationActive = true;
       logDebug('🎉 Celebration started!');
-
-      const interval = 1000; // one burst per second
-      const totalDuration = 60 * 1000; // one minute
+      const interval = 1000;
+      const totalDuration = 60 * 1000;
       const endTime = Date.now() + totalDuration;
-
+      let burstCount = 0;
       const loop = setInterval(() => {
-        triggerCelebration({ count: 24 }); // smaller bursts each second
+        burstCount++;
+        triggerCelebration({ count: 24 });
+        logDebug(`burst #${burstCount}`);
         if (Date.now() >= endTime) {
           clearInterval(loop);
           celebrationActive = false;
@@ -131,7 +173,6 @@
       }, interval);
     }
 
-    // simple confetti burst
     function triggerCelebration({count = 36} = {}) {
       if (!celebrationEl) return;
       const colors = ['#66D1FF','#06d6a0','#4cc9f0','#ff6b6b','#c792ea','#f9c74f'];
@@ -156,93 +197,16 @@
       celebrationEl.appendChild(frag);
     }
 
-    // debug button: still just a single burst
+    // === debug button ===
     if (debugBtn) {
       debugBtn.addEventListener('click', () => {
         logDebug('debug input');
         tick();
-        triggerCelebration({count:40}); // single burst for testing
-        if (debugBtn.animate) {
-          debugBtn.animate(
-            [{ transform: 'scale(1)' }, { transform: 'scale(0.96)' }, { transform: 'scale(1)' }],
-            { duration: 180, easing: 'ease-out' }
-          );
-        }
+        triggerCelebration({count:40});
       });
     }
 
-    function pad2(n) { return n.toString().padStart(2, '0'); }
+    // === clocks ===
+    function pad2(n){ return n.toString().padStart(2,'0'); }
 
     function tick() {
-      const now = new Date();
-      const h24 = pad2(now.getHours());
-      const h12 = pad2(((now.getHours() + 11) % 12) + 1);
-      const m = pad2(now.getMinutes());
-      const s = pad2(now.getSeconds());
-      const digital24h = `${h24}:${m}:${s}`;
-      const digital12h = `${h12}:${m}:${s}`;
-      const digital12hnosec = `${h12}:${m}`;
-      const digitalsec = `${s}`;
-
-      document.getElementById('digital24h').textContent = digital24h;
-      document.getElementById('digital12h').textContent = digital12h;
-      document.getElementById('digital12hnosec').textContent = digital12hnosec;
-      document.getElementById('digitalsec').textContent = digitalsec;
-
-      // check patterns
-      checkRuns('digital24h', digital24h);
-      checkRuns('digital12h', digital12h);
-      checkRuns('digital12hnosec', digital12hnosec);
-      checkRuns('digitalsec', digitalsec);
-
-      drawAnalog(now);
-    }
-
-    function checkRuns(name, str) {
-      // Example triggers:
-      if (/^(\d)\1:\1\1/.test(str)) {
-        maybeTrigger(name, 'all-same');
-      }
-      if (/(\d):\1/.test(str)) {
-        maybeTrigger(name, 'palindrome');
-      }
-      if (/12:34/.test(str)) {
-        maybeTrigger(name, '1234');
-      }
-    }
-
-    function drawAnalog(now) {
-      const ctx = document.getElementById('analog').getContext('2d');
-      const w = ctx.canvas.width, h = ctx.canvas.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.save();
-      ctx.translate(w/2, h/2);
-      ctx.strokeStyle = 'lime';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(0, 0, w/2 - 5, 0, 2*Math.PI);
-      ctx.stroke();
-      const sec = now.getSeconds();
-      const min = now.getMinutes();
-      const hr = now.getHours();
-      drawHand(ctx, (hr%12)/12 * 2*Math.PI, w*0.2);
-      drawHand(ctx, min/60 * 2*Math.PI, w*0.3);
-      drawHand(ctx, sec/60 * 2*Math.PI, w*0.4);
-      ctx.restore();
-    }
-
-    function drawHand(ctx, angle, length) {
-      ctx.save();
-      ctx.rotate(angle - Math.PI/2);
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.lineTo(length,0);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    setInterval(tick, 1000);
-    tick();
-  </script>
-</body>
-</html>
