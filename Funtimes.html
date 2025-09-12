@@ -51,6 +51,18 @@
     color: lime;
     cursor: pointer;
   }
+  #debugConsole {
+    width: 90%;
+    height: 150px;
+    margin-top: 15px;
+    background: black;
+    color: lime;
+    border: 1px solid lime;
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 5px;
+    overflow-y: auto;
+  }
 </style>
 </head>
 <body>
@@ -63,14 +75,27 @@
   </div>
   <div id="celebration"></div>
   <button id="debug">Debug Celebration</button>
+  <textarea id="debugConsole" readonly></textarea>
   <script>
     const celebrationEl = document.getElementById('celebration');
     const debugBtn = document.getElementById('debug');
+    const debugConsole = document.getElementById('debugConsole');
     const lastTriggered = new Map();
     let celebrationActive = false;
 
+    function getTimestamp() {
+      const now = new Date();
+      return now.toTimeString().split(' ')[0]; // HH:MM:SS
+    }
+
     function logDebug(msg) {
-      console.log('[DEBUG]', msg);
+      const stamp = getTimestamp();
+      const line = `[${stamp}] ${msg}`;
+      console.log(line);
+      if (debugConsole) {
+        debugConsole.value += line + "\n";
+        debugConsole.scrollTop = debugConsole.scrollHeight;
+      }
     }
 
     function maybeTrigger(name, value, opts = {}) {
@@ -167,7 +192,7 @@
       // check patterns
       checkRuns('digital24h', digital24h);
       checkRuns('digital12h', digital12h);
-      checkRuns('digital12hnosec', digital12hnosec); // ✅ added
+      checkRuns('digital12hnosec', digital12hnosec);
       checkRuns('digitalsec', digitalsec);
 
       drawAnalog(now);
