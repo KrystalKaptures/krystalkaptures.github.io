@@ -10,7 +10,7 @@ body {
     font-family: 'Arial', sans-serif;
     background-image: url('.jpg');
     background-color: #000000; /* Light blue background */
-    color: #333; /* Dark text color */
+    color: #90D5FF; /* Dark text color */
     background-size: 50%; /* Ensures the image covers the entire viewport */
     background-position: center; /* Centers the image */
     background-repeat: no-repeat; /* Prevents tiling */
@@ -32,19 +32,19 @@ body {
 
 
 /* Additional style for different days */
-.Sunday { color: #f39c12; }
-.Monday { color: #e74c3c; }
-.Tuesday { color: #8e44ad; }
-.Wednesday { color: #2980b9; }
-.Thursday { color: #27ae60; }
-.Friday { color: #f1c40f; }
-.Saturday { color: #9b59b6; }
+.Sunday { color: #90D5FF; }
+.Monday { color: #90D5FF; }
+.Tuesday { color: #90D5FF; }
+.Wednesday { color: #90D5FF; }
+.Thursday { color: #90D5FF; }
+.Friday { color: #90D5FF; }
+.Saturday { color: #90D5FF; }
 
 
 /* Main title (h1) styling */
 h1 {
     font-size: 3rem;
-    color: #2c3e50;
+    color: #90D5FF;
     margin-bottom: 20px;
     font-weight: bold;
     text-align: center;
@@ -53,7 +53,7 @@ h1 {
 /* Secondary title (h2) styling */
 h2 {
     font-size: 2rem;
-    color: #7f8c8d;
+    color: #90D5FF;
     margin-bottom: 20px;
     font-weight: 400;
     text-align: center;
