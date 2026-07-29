@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Solo speed-matching card game inspired by Blink.">
+<title>Blink Solo - kkH</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #e5484d;
+    --yellow: #eab308;
+    --green: #16a34a;
+    --blue: #2563eb;
+    --purple: #9333ea;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #000000;
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+
+  a.home-link {
+    align-self: flex-start;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  a.home-link:hover { color: #fff; }
+
+  h1 {
+    font-size: 2rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .tagline {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .stat {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    padding: 10px 18px;
+    text-align: center;
+    min-width: 92px;
+  }
+
+  .stat .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 2px;
+  }
+
+  .stat .value {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat.best .value { color: #eab308; }
+
+  .table {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 28px 20px;
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    position: relative;
+  }
+
+  .center-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  .stock-pile {
+    position: relative;
+    width: 74px;
+    height: 104px;
+  }
+
+  .stock-card-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: repeating-linear-gradient(135deg, #1e293b, #1e293b 6px, #111827 6px, #111827 12px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .stock-pile .stock-card-back:nth-child(1) { transform: translate(0, 0); }
+  .stock-pile .stock-card-back:nth-child(2) { transform: translate(3px, -3px); opacity: 0.7; }
+  .stock-pile .stock-card-back:nth-child(3) { transform: translate(6px, -6px); opacity: 0.5; }
+
+  .stock-count {
+    position: absolute;
+    bottom: -22px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .card {
+    width: 86px;
+    height: 122px;
+    border-radius: 12px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+  }
+
+  .card.big { width: 100px; height: 140px; }
+
+  .card .count-badge {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  .card svg { width: 92%; height: 92%; }
+
+  .card .pip { }
+
+  .card .key-hint {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 999px;
+    width: 15px;
+    height: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .center-pile-wrap {
+    position: relative;
+    width: 100px;
+    height: 140px;
+  }
+
+  .center-pile-wrap .card {
+    position: absolute;
+    inset: 0;
+  }
+
+  .center-pile-wrap .card.ghost {
+    background: #e5e7eb;
+  }
+  .center-pile-wrap .card:nth-child(1) { transform: translate(4px, 4px); z-index: 1; }
+  .center-pile-wrap .card:nth-child(2) { transform: translate(2px, 2px); z-index: 2; }
+  .center-pile-wrap .card:nth-child(3) { z-index: 3; }
+
+  .hand-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+  }
+
+  .hand {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 122px;
+  }
+
+  .hand .card {
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .hand .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
+  }
+
+  .hand .card.playing {
+    animation: play-out 0.28s ease forwards;
+    pointer-events: none;
+  }
+
+  @keyframes play-out {
+    to { transform: translateY(-70px) scale(0.4); opacity: 0; }
+  }
+
+  .hand .card.invalid {
+    animation: shake 0.32s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+
+  .stuck-banner {
+    font-size: 12px;
+    color: #fca5a5;
+    text-align: center;
+    min-height: 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .stuck-banner.show { opacity: 1; }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  button.action {
+    padding: 10px 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  button.action:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .rules {
+    max-width: 640px;
+    margin-top: 22px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .overlay.show { display: flex; }
+
+  .win-card {
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 36px 32px;
+    text-align: center;
+    max-width: 320px;
+  }
+
+  .win-card h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .win-card .win-time {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .win-card .new-best {
+    color: #eab308;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    min-height: 16px;
+  }
+
+  .win-card .win-best-row {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 18px;
+  }
+
+  .win-card .win-best-row span {
+    color: #eab308;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 480px) {
+    .card { width: 68px; height: 96px; }
+    .card.big { width: 84px; height: 118px; }
+    .center-pile-wrap { width: 84px; height: 118px; }
+    .stock-pile { width: 62px; height: 88px; }
+  }
+</style>
+</head>
+<body>
+
+<a class="home-link" href="../index.html">&larr; kk</a>
+
+<h1>Blink</h1>
+<p class="tagline">Match by color, shape, or count. You've got 60 seconds — see how many you can get.</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Time</div>
+    <div class="value" id="timer">01:00.0</div>
+  </div>
+  <div class="stat best">
+    <div class="label">Best</div>
+    <div class="value" id="best-score">--</div>
+  </div>
+  <div class="stat">
+    <div class="label">Cards</div>
+    <div class="value" id="cards-score">0</div>
+  </div>
+</div>
+
+<div class="table">
+  <div class="center-row">
+    <div class="stock-pile" id="stock-pile">
+      <div class="stock-card-back"></div>
+      <div class="stock-card-back"></div>
+      <div class="stock-card-back"></div>
+      <div class="stock-count" id="stock-count">0</div>
+    </div>
+    <div class="center-pile-wrap" id="center-pile"></div>
+  </div>
+
+  <div>
+    <div class="hand-label">Your hand — tap a match</div>
+    <div class="hand" id="hand"></div>
+    <div class="stuck-banner" id="stuck-banner">No matches — tap any card to force play (+5s penalty)</div>
+  </div>
+
+  <div class="controls">
+    <button class="action" id="new-game-btn">New Game</button>
+  </div>
+</div>
+
+<p class="rules">
+  Play a hand card onto the center pile if it shares a color, shape, or count with the top card.
+  Your hand refills from the stock automatically. You have 60 seconds — your score is how many
+  cards you play. Clear the whole deck before time's up and you're ranked by how much time you
+  had left instead.
+</p>
+
+<div class="overlay" id="win-overlay">
+  <div class="win-card">
+    <h2 id="win-title">Time's Up!</h2>
+    <div class="win-time" id="win-stat">0 cards</div>
+    <div class="new-best" id="new-best-msg"></div>
+    <div class="win-best-row">Best: <span id="win-best-display">--</span></div>
+    <button class="action" id="play-again-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var COLORS = [
+    { key: 'red', hex: '#e5484d' },
+    { key: 'yellow', hex: '#eab308' },
+    { key: 'green', hex: '#16a34a' },
+    { key: 'blue', hex: '#2563eb' },
+    { key: 'purple', hex: '#9333ea' }
+  ];
+  var SHAPES = ['circle', 'square', 'triangle', 'star', 'diamond'];
+  var COUNTS = [1, 2, 3, 4, 5];
+  var DECK_SIZE = 60;
+  var HAND_SIZE = 5;
+  var FORCE_PENALTY_MS = 5000;
+  var GAME_DURATION_MS = 60000;
+  var COOKIE_NAME = 'blinkBestScore';
+
+  // ---- cookie helpers ----
+  // Cookies don't persist on file:// pages in most browsers (silently no-op),
+  // so localStorage backs them up as a fallback for local testing.
+  function setCookie(name, value, days) {
+    var d = new Date();
+    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+    try { window.localStorage.setItem(name, value); } catch (e) { /* storage unavailable */ }
+  }
+  function getCookie(name) {
+    var pairs = document.cookie.split(';');
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i].trim().split('=');
+      if (pair[0] === name) return decodeURIComponent(pair[1] || '');
+    }
+    try {
+      var stored = window.localStorage.getItem(name);
+      if (stored !== null) return stored;
+    } catch (e) { /* storage unavailable */ }
+    return null;
+  }
+
+  // ---- shape rendering ----
+  function shapeSvg(shapeKey, hex) {
+    switch (shapeKey) {
+      case 'circle':
+        return '<circle cx="12" cy="12" r="9" fill="' + hex + '"/>';
+      case 'square':
+        return '<rect x="3" y="3" width="18" height="18" rx="2" fill="' + hex + '"/>';
+      case 'triangle':
+        return '<polygon points="12,3 21,20 3,20" fill="' + hex + '"/>';
+      case 'star':
+        return '<polygon points="12,2 14.7,9.1 22,9.6 16.3,14.3 18.2,21.4 12,17.3 5.8,21.4 7.7,14.3 2,9.6 9.3,9.1" fill="' + hex + '"/>';
+      case 'diamond':
+        return '<polygon points="12,2 22,12 12,22 2,12" fill="' + hex + '"/>';
+      default:
+        return '';
+    }
+  }
+
+  var PIP_LAYOUTS = {
+    1: [[50, 50]],
+    2: [[28, 28], [72, 72]],
+    3: [[28, 28], [50, 50], [72, 72]],
+    4: [[28, 28], [72, 28], [28, 72], [72, 72]],
+    5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]]
+  };
+
+  function cardFaceHtml(card) {
+    var colorObj = COLORS.filter(function (c) { return c.key === card.color; })[0];
+    var hex = colorObj.hex;
+    var positions = PIP_LAYOUTS[card.count];
+    var svgShapes = positions.map(function (pos) {
+      return '<g transform="translate(' + (pos[0] - 12) + ',' + (pos[1] - 12) + ')">' + shapeSvg(card.shape, hex) + '</g>';
+    }).join('');
+    return (
+      '<span class="count-badge">' + card.count + '</span>' +
+      '<svg viewBox="0 0 100 100">' + svgShapes + '</svg>'
+    );
+  }
+
+  // ---- deck ----
+  function buildDeck() {
+    var combos = [];
+    for (var ci = 0; ci < COLORS.length; ci++) {
+      for (var si = 0; si < SHAPES.length; si++) {
+        for (var ni = 0; ni < COUNTS.length; ni++) {
+          combos.push({
+            id: COLORS[ci].key + '-' + SHAPES[si] + '-' + COUNTS[ni],
+            color: COLORS[ci].key,
+            shape: SHAPES[si],
+            count: COUNTS[ni]
+          });
+        }
+      }
+    }
+    shuffle(combos);
+    return combos.slice(0, DECK_SIZE);
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function matches(a, b) {
+    return a.color === b.color || a.shape === b.shape || a.count === b.count;
+  }
+
+  // ---- game state ----
+  var state = {
+    stock: [],
+    hand: [],
+    center: [],
+    playsCount: 0,
+    startTime: 0,
+    timerInterval: null,
+    running: false,
+    finished: false
+  };
+
+  var timerEl = document.getElementById('timer');
+  var bestScoreEl = document.getElementById('best-score');
+  var cardsScoreEl = document.getElementById('cards-score');
+  var stockCountEl = document.getElementById('stock-count');
+  var centerPileEl = document.getElementById('center-pile');
+  var handEl = document.getElementById('hand');
+  var stuckBannerEl = document.getElementById('stuck-banner');
+  var winOverlayEl = document.getElementById('win-overlay');
+  var winTitleEl = document.getElementById('win-title');
+  var winStatEl = document.getElementById('win-stat');
+  var newBestMsgEl = document.getElementById('new-best-msg');
+  var winBestDisplayEl = document.getElementById('win-best-display');
+
+  function formatMs(ms) {
+    if (ms < 0) ms = 0;
+    var totalTenths = Math.floor(ms / 100);
+    var minutes = Math.floor(totalTenths / 600);
+    var seconds = Math.floor((totalTenths % 600) / 10);
+    var tenths = totalTenths % 10;
+    return pad2(minutes) + ':' + pad2(seconds) + '.' + tenths;
+  }
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // A score is either {type:'cards', value:N} (deck not cleared in time) or
+  // {type:'complete', value:msRemaining} (deck cleared before time ran out).
+  // Any 'complete' score outranks any 'cards' score; within a type, higher value wins.
+  function encodeScore(score) {
+    return score.type + ':' + Math.round(score.value);
+  }
+
+  function parseScore(raw) {
+    if (!raw) return null;
+    var parts = raw.split(':');
+    if (parts.length !== 2) return null;
+    var type = parts[0];
+    var value = parseInt(parts[1], 10);
+    if ((type !== 'cards' && type !== 'complete') || isNaN(value)) return null;
+    return { type: type, value: value };
+  }
+
+  function isBetter(a, b) {
+    if (!b) return true;
+    if (a.type === b.type) return a.value > b.value;
+    return a.type === 'complete';
+  }
+
+  function formatScore(score) {
+    if (!score) return '--';
+    if (score.type === 'complete') return 'Cleared +' + (score.value / 1000).toFixed(1) + 's';
+    return score.value + ' cards';
+  }
+
+  function loadBest() {
+    var best = parseScore(getCookie(COOKIE_NAME));
+    bestScoreEl.textContent = formatScore(best);
+    return best;
+  }
+
+  function saveBestIfNeeded(score) {
+    var current = parseScore(getCookie(COOKIE_NAME));
+    if (isBetter(score, current)) {
+      setCookie(COOKIE_NAME, encodeScore(score), 365);
+      bestScoreEl.textContent = formatScore(score);
+      return true;
+    }
+    return false;
+  }
+
+  function newGame() {
+    clearInterval(state.timerInterval);
+    var deck = buildDeck();
+    state.stock = deck.slice();
+    state.center = [state.stock.pop()];
+    state.hand = [];
+    for (var i = 0; i < HAND_SIZE && state.stock.length > 0; i++) {
+      state.hand.push(state.stock.pop());
+    }
+    state.playsCount = 0;
+    state.startTime = Date.now();
+    state.running = true;
+    state.finished = false;
+    winOverlayEl.classList.remove('show');
+    timerEl.textContent = formatMs(GAME_DURATION_MS);
+    loadBest();
+    state.timerInterval = setInterval(tick, 100);
+    render();
+  }
+
+  function tick() {
+    if (!state.running) return;
+    var elapsed = Date.now() - state.startTime;
+    var remaining = GAME_DURATION_MS - elapsed;
+    if (remaining <= 0) {
+      timerEl.textContent = '00:00.0';
+      timeUp();
+      return;
+    }
+    timerEl.textContent = formatMs(remaining);
+  }
+
+  function topCenter() {
+    return state.center[state.center.length - 1];
+  }
+
+  function isStuck() {
+    var top = topCenter();
+    return state.hand.length > 0 && state.hand.every(function (c) { return !matches(c, top); });
+  }
+
+  function playCard(index, cardEl) {
+    if (state.finished) return;
+    var card = state.hand[index];
+    var top = topCenter();
+    var valid = matches(card, top);
+    var stuck = isStuck();
+
+    if (!valid && !stuck) {
+      cardEl.classList.add('invalid');
+      setTimeout(function () { cardEl.classList.remove('invalid'); }, 320);
+      return;
+    }
+
+    if (!valid && stuck) {
+      state.startTime -= FORCE_PENALTY_MS;
+    }
+
+    cardEl.classList.add('playing');
+    setTimeout(function () {
+      state.center.push(card);
+      state.playsCount++;
+      if (state.stock.length > 0) {
+        state.hand[index] = state.stock.pop();
+      } else {
+        state.hand.splice(index, 1);
+      }
+      if (state.hand.length === 0 && state.stock.length === 0) {
+        completeDeck();
+      }
+      render();
+    }, 180);
+  }
+
+  function completeDeck() {
+    state.finished = true;
+    state.running = false;
+    clearInterval(state.timerInterval);
+    var elapsed = Date.now() - state.startTime;
+    var msRemaining = Math.max(0, GAME_DURATION_MS - elapsed);
+    timerEl.textContent = formatMs(msRemaining);
+    showEndOverlay('Deck Cleared!', { type: 'complete', value: msRemaining });
+  }
+
+  function timeUp() {
+    if (state.finished) return;
+    state.finished = true;
+    state.running = false;
+    clearInterval(state.timerInterval);
+    showEndOverlay("Time's Up!", { type: 'cards', value: state.playsCount });
+  }
+
+  function showEndOverlay(title, score) {
+    winTitleEl.textContent = title;
+    winStatEl.textContent = formatScore(score);
+    var isNewBest = saveBestIfNeeded(score);
+    newBestMsgEl.textContent = isNewBest ? 'New Best!' : '';
+    winBestDisplayEl.textContent = bestScoreEl.textContent;
+    setTimeout(function () {
+      winOverlayEl.classList.add('show');
+    }, 200);
+  }
+
+  function render() {
+    // center pile (show up to 3 stacked)
+    centerPileEl.innerHTML = '';
+    var visible = state.center.slice(-3);
+    visible.forEach(function (card, i) {
+      var el = document.createElement('div');
+      el.className = 'card big';
+      el.innerHTML = cardFaceHtml(card);
+      centerPileEl.appendChild(el);
+    });
+
+    // stock count
+    stockCountEl.textContent = state.stock.length;
+    document.getElementById('stock-pile').style.visibility = state.stock.length > 0 ? 'visible' : 'hidden';
+
+    // hand
+    handEl.innerHTML = '';
+    state.hand.forEach(function (card, index) {
+      var el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = cardFaceHtml(card) + '<span class="key-hint">' + (index + 1) + '</span>';
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', card.count + ' ' + card.color + ' ' + card.shape + ', key ' + (index + 1));
+      el.addEventListener('click', function () { playCard(index, el); });
+      handEl.appendChild(el);
+    });
+
+    // score so far
+    cardsScoreEl.textContent = state.playsCount;
+
+    // stuck banner
+    stuckBannerEl.classList.toggle('show', isStuck());
+  }
+
+  document.getElementById('new-game-btn').addEventListener('click', newGame);
+  document.getElementById('play-again-btn').addEventListener('click', newGame);
+
+  document.addEventListener('keydown', function (e) {
+    var num = parseInt(e.key, 10);
+    if (isNaN(num) || num < 1 || num > HAND_SIZE) return;
+    var index = num - 1;
+    if (index >= state.hand.length) return;
+    var cardEl = handEl.children[index];
+    if (cardEl) playCard(index, cardEl);
+  });
+
+  loadBest();
+  newGame();
+})();
+</script>
+
+</body>
+</html>
