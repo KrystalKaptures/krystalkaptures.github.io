@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adjective of the Day</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fdfaf5;
+    --fg: #1a1a1a;
+    --accent: #d1495b;
+    --muted: #6b6b6b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --fg: #f2f0eb;
+      --accent: #ff7a8a;
+      --muted: #9a9a9a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    text-align: center;
+    padding: 2rem;
+  }
+  .card {
+    max-width: 32rem;
+  }
+  .day {
+    font-size: 0.95rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+  }
+  .word {
+    font-size: clamp(2.5rem, 10vw, 5rem);
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+    word-break: break-word;
+  }
+  .sub {
+    margin-top: 1rem;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <p class="day" id="dayLabel"></p>
+    <h1 class="word" id="wordLabel">loading…</h1>
+    <p class="sub" id="subLabel">Fetching today's word list…</p>
+  </div>
+
+<script>
+  // Full dictionary of English adjectives (~27k words), fetched live from a
+  // CORS-enabled, MIT-licensed word list on GitHub:
+  // https://github.com/taikuukaits/SimpleWordlists
+  const ADJECTIVE_LIST_URL =
+    "https://raw.githubusercontent.com/taikuukaits/SimpleWordlists/master/Wordlist-Adjectives-All.txt";
+
+  // Small built-in backup in case the fetch fails (offline, network error, etc).
+  // Matching is by sound: every day just needs its first letter, EXCEPT
+  // Thursday, whose "th" is a distinct sound from a plain "t" (as in Tuesday).
+  const FALLBACK_ADJECTIVES_BY_DAY = {
+    // Sunday -> "s"
+    0: [
+      "sunny","super","superb","superior","supple","supportive","surly",
+      "surprising","suspicious","sultry","sumptuous","sunlit","suave",
+      "silly","simple","sincere","skillful","sleek","sleepy","slender",
+      "slick","slippery","slow","sly","small","smart","smoky","smooth",
+      "snappy","snazzy","sneaky","snug","sociable","soft","solemn","solid",
+      "soothing","sophisticated","sorrowful","soulful","sparkling",
+      "special","spectacular","speedy","spicy","spirited","splendid",
+      "spontaneous","spotless","spry","spunky","stable","starry",
+      "steady","stern","sticky","stormy","strange","striking","strong",
+      "stubborn","stunning","sturdy","stylish","subtle","successful",
+      "sudden","sullen"
+    ],
+    // Monday -> "m"
+    1: [
+      "modern","modest","moody","monstrous","monumental","mossy",
+      "motionless","motley","mournful","mouthwatering","mobile","moist",
+      "monotonous","moonlit","morose","motivated","mottled","moral",
+      "morbid","mortified","magical","majestic","marvelous","mellow",
+      "merry","mighty","misty","mystical","musical","mysterious",
+      "magnificent","massive","meek","melodic","memorable","menacing",
+      "meticulous","mild","mindful","miniature","mischievous","miserable",
+      "muddy","muscular","mushy","mute"
+    ],
+    // Tuesday -> "t" (but not "th" — that belongs to Thursday)
+    2: [
+      "tall","tame","tangy","tart","tasty","tattered","tedious","teeming",
+      "tender","tense","terrific","testy","tidy","tight","timeless",
+      "timid","tingly","tiny","tired","torn","tough","towering","tragic",
+      "tranquil","transparent","treacherous","tremendous","tricky","trim",
+      "triumphant","trivial","tropical","troubled","trusty","turbulent",
+      "twinkling","twisted","typical","talkative","tactful","talented"
+    ],
+    // Wednesday -> "w"
+    3: [
+      "warm","wacky","wandering","wary","wasteful","watchful","watery",
+      "wavy","wealthy","weary","weak","wee","weedy","weepy","weighty",
+      "weird","welcoming","wet","whimsical","whiny","wholesome","wicked",
+      "wide","wild","willing","wily","windy","wintry","wiry","wise",
+      "wishful","wistful","witty","wobbly","wondrous","wooden","woolly",
+      "worldly","worn","worried","worthy","wrinkled","wry"
+    ],
+    // Thursday -> "th" (distinct sound from "t")
+    4: [
+      "thankful","thoughtful","thorough","thrilling","thriving",
+      "thunderous","thin","thick","thirsty","thorny","threadbare",
+      "threatening","thrifty","throbbing","thoughtless","thundering",
+      "theatrical","therapeutic","thick-skinned","thin-skinned",
+      "thrilled","throaty","thumping","thunderstruck"
+    ],
+    // Friday -> "f"
+    5: [
+      "fresh","friendly","frantic","frigid","frisky","frugal","fruity",
+      "frosty","frail","free","frenzied","freckled","frequent",
+      "frightened","frothy","frumpy","fragrant","fragile","frank",
+      "fabulous","faithful","fanciful","fancy","fantastic","fast","fat",
+      "faded","faint","fair","familiar","famous","feisty","feeble",
+      "ferocious","fervent","festive","fickle","fierce","fiery","filthy",
+      "fine","firm","fit","flaky","flamboyant","flashy","flat","flawless",
+      "fleeting","flimsy","flirty","floral","fluffy","fluid","foamy",
+      "foggy","fond","foolish","forgetful","forgiving","formal",
+      "fortunate"
+    ],
+    // Saturday -> "s"
+    6: [
+      "sad","safe","salty","sandy","sappy","sarcastic","sassy",
+      "satisfied","savage","savory","saintly","sacred","sanguine",
+      "saucy","saggy","sallow","salient","scarce","scared","scary",
+      "scattered","scenic","scholarly","scrawny","scruffy","secretive",
+      "secure","sedate","selfish","sensible","sensitive","serene",
+      "serious","severe","shabby","shady","shaggy","shaky","shallow",
+      "shameless","sharp","sheepish","shiny","shivering","shocking",
+      "short","shrewd","shy","silent"
+    ]
+  };
+
+  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const dayPrefixes = ["s","m","t","w","th","f","s"];
+
+  const today = new Date();
+  const dayIndex = today.getDay();
+
+  document.getElementById("dayLabel").textContent =
+    dayNames[dayIndex] + " · " + today.toLocaleDateString() +
+    " · starts with \"" + dayPrefixes[dayIndex] + "\"";
+
+  // Words for Tuesday must start with "t" but NOT "th" — that sound belongs
+  // to Thursday alone.
+  function matchesDay(word, dIndex) {
+    const w = word.toLowerCase();
+    const prefix = dayPrefixes[dIndex];
+    if (dIndex === 2) return w.startsWith("t") && !w.startsWith("th");
+    return w.startsWith(prefix);
+  }
+
+  function showWord(words, sourceLabel) {
+    const wordIndex = Math.floor(Math.random() * words.length);
+    document.getElementById("wordLabel").textContent =
+      (words[wordIndex] + " " + dayNames[dayIndex]).toUpperCase();
+    document.getElementById("subLabel").textContent =
+      "Picked from " + words.length + " matching adjectives (" + sourceLabel + ").";
+  }
+
+  fetch(ADJECTIVE_LIST_URL)
+    .then(function (res) {
+      if (!res.ok) throw new Error("Bad response: " + res.status);
+      return res.text();
+    })
+    .then(function (text) {
+      const allWords = text
+        .split("\n")
+        .map(function (w) { return w.trim(); })
+        .filter(function (w) {
+          // Keep plain lowercase words only (skip proper adjectives like "Aaronic").
+          return w.length > 0 && /^[a-z][a-z-]*$/.test(w);
+        });
+
+      const matched = allWords.filter(function (w) { return matchesDay(w, dayIndex); });
+
+      if (matched.length === 0) throw new Error("No matches in fetched list");
+      showWord(matched, "live dictionary of " + allWords.length + " adjectives");
+    })
+    .catch(function (err) {
+      console.warn("Falling back to built-in word list:", err);
+      const words = FALLBACK_ADJECTIVES_BY_DAY[dayIndex];
+      showWord(words, "offline backup list");
+    });
+</script>
+</body>
+</html>
