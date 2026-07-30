@@ -47,8 +47,49 @@
   .tagline {
     color: rgba(255, 255, 255, 0.6);
     font-size: 13px;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
     text-align: center;
+  }
+
+  .mode-switch {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 10px;
+  }
+
+  .mode-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .mode-btn:hover {
+    color: #ffffff;
+  }
+
+  .mode-btn.active {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+  }
+
+  .mode-desc {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    max-width: 420px;
+    text-align: center;
+    margin-bottom: 16px;
+    min-height: 32px;
   }
 
   .stats {
@@ -343,6 +384,10 @@
     letter-spacing: 1px;
   }
 
+  .win-card h2.fail {
+    color: #f87171;
+  }
+
   .win-card .win-time {
     font-size: 32px;
     font-weight: 700;
@@ -430,7 +475,13 @@
 <a class="home-link" href="../index.html">&larr; kk</a>
 
 <h1>Blink</h1>
-<p class="tagline">Match by color, shape, or count. You've got 60 seconds — see how many you can get.</p>
+<p class="tagline">Match by color, shape, or count.</p>
+
+<div class="mode-switch" id="mode-switch">
+  <button class="mode-btn active" id="mode-time-attack" type="button">Time Attack</button>
+  <button class="mode-btn" id="mode-clear-deck" type="button">Clear the Deck</button>
+</div>
+<p class="mode-desc" id="mode-desc"></p>
 
 <div class="stats">
   <div class="stat">
@@ -442,7 +493,7 @@
     <div class="value" id="best-score">--</div>
   </div>
   <div class="stat">
-    <div class="label">Cards</div>
+    <div class="label" id="cards-label">Cards</div>
     <div class="value" id="cards-score">0</div>
   </div>
 </div>
@@ -471,9 +522,7 @@
 <p class="rules">
   Play a hand card onto the center pile if it shares a color, shape, or count with the top card.
   Your hand refills from the stock automatically. No matches in hand? Tap the draw pile to burn
-  its top card onto the center pile and keep going. You have 60 seconds — your score is how many
-  cards you play. Clear the whole deck before time's up and you're ranked by how much time you
-  had left instead.
+  its top card onto the center pile and keep going.
 </p>
 
 <div class="overlay" id="win-overlay">
@@ -508,7 +557,15 @@
   var DECK_SIZE = 60;
   var HAND_SIZE = 5;
   var GAME_DURATION_MS = 60000;
-  var COOKIE_NAME = 'blinkBestScore';
+  var TIME_ATTACK_COOKIE = 'blinkBestScore';
+  var CLEAR_DECK_COOKIE = 'blinkBestClearMs';
+
+  var MODE_DESCRIPTIONS = {
+    'time-attack': "60 seconds on the clock. Your score is how many cards you play — clear the " +
+      "whole deck before time's up and you're ranked by how much time you had left instead.",
+    'clear-deck': "No time limit but the clock is ticking — clear the entire deck as fast as you " +
+      "can. Run out of legal moves (no match in hand, nothing left to draw) and it's game over."
+  };
 
   // ---- cookie helpers ----
   // Cookies don't persist on file:// pages in most browsers (silently no-op),
@@ -616,6 +673,7 @@
 
   // ---- game state ----
   var state = {
+    mode: 'time-attack',
     stock: [],
     hand: [],
     center: [],
@@ -635,6 +693,10 @@
   var timerEl = document.getElementById('timer');
   var bestScoreEl = document.getElementById('best-score');
   var cardsScoreEl = document.getElementById('cards-score');
+  var cardsLabelEl = document.getElementById('cards-label');
+  var modeDescEl = document.getElementById('mode-desc');
+  var modeTimeAttackBtn = document.getElementById('mode-time-attack');
+  var modeClearDeckBtn = document.getElementById('mode-clear-deck');
   var stockCountEl = document.getElementById('stock-count');
   var stockPileEl = document.getElementById('stock-pile');
   var centerPileEl = document.getElementById('center-pile');
@@ -685,16 +747,31 @@
   }
 
   function loadBest() {
-    var best = parseScore(getCookie(COOKIE_NAME));
+    if (state.mode === 'clear-deck') {
+      var ms = getCookie(CLEAR_DECK_COOKIE);
+      bestScoreEl.textContent = ms ? formatMs(parseInt(ms, 10)) : '--:--.-';
+      return;
+    }
+    var best = parseScore(getCookie(TIME_ATTACK_COOKIE));
     bestScoreEl.textContent = formatScore(best);
-    return best;
   }
 
   function saveBestIfNeeded(score) {
-    var current = parseScore(getCookie(COOKIE_NAME));
+    var current = parseScore(getCookie(TIME_ATTACK_COOKIE));
     if (isBetter(score, current)) {
-      setCookie(COOKIE_NAME, encodeScore(score), 365);
+      setCookie(TIME_ATTACK_COOKIE, encodeScore(score), 365);
       bestScoreEl.textContent = formatScore(score);
+      return true;
+    }
+    return false;
+  }
+
+  function saveBestClearTime(ms) {
+    var current = getCookie(CLEAR_DECK_COOKIE);
+    var currentNum = current ? parseInt(current, 10) : null;
+    if (currentNum === null || ms < currentNum) {
+      setCookie(CLEAR_DECK_COOKIE, String(Math.round(ms)), 365);
+      bestScoreEl.textContent = formatMs(ms);
       return true;
     }
     return false;
@@ -742,7 +819,7 @@
     state.rejecting = false;
     state.drawing = false;
     winOverlayEl.classList.remove('show');
-    timerEl.textContent = formatMs(GAME_DURATION_MS);
+    timerEl.textContent = state.mode === 'clear-deck' ? formatMs(0) : formatMs(GAME_DURATION_MS);
     loadBest();
     gameTableEl.classList.add('counting-down');
     render();
@@ -759,6 +836,10 @@
   function tick() {
     if (!state.running) return;
     var elapsed = Date.now() - state.startTime;
+    if (state.mode === 'clear-deck') {
+      timerEl.textContent = formatMs(elapsed);
+      return;
+    }
     var remaining = GAME_DURATION_MS - elapsed;
     if (remaining <= 0) {
       timerEl.textContent = '00:00.0';
@@ -805,8 +886,17 @@
       }
       if (state.hand.length === 0 && state.stock.length === 0) {
         completeDeck();
+      } else {
+        checkDeadlock();
       }
     });
+  }
+
+  function checkDeadlock() {
+    if (state.mode !== 'clear-deck' || state.finished) return;
+    if (isStuck() && state.stock.length === 0) {
+      failClear();
+    }
   }
 
   function flyCardToCenter(cardEl, onArrive) {
@@ -974,6 +1064,7 @@
     render();
     flipFromStock(centerPileEl.lastElementChild, drawnCard, function () {
       state.drawing = false;
+      checkDeadlock();
     });
   }
 
@@ -1021,6 +1112,14 @@
     state.running = false;
     clearInterval(state.timerInterval);
     var elapsed = Date.now() - state.startTime;
+
+    if (state.mode === 'clear-deck') {
+      timerEl.textContent = formatMs(elapsed);
+      var isNewBest = saveBestClearTime(elapsed);
+      displayEndOverlay('Deck Cleared!', formatMs(elapsed), isNewBest ? 'New Best Time!' : '', false);
+      return;
+    }
+
     var msRemaining = Math.max(0, GAME_DURATION_MS - elapsed);
     timerEl.textContent = formatMs(msRemaining);
     showEndOverlay('Deck Cleared!', { type: 'complete', value: msRemaining });
@@ -1034,11 +1133,25 @@
     showEndOverlay("Time's Up!", { type: 'cards', value: state.playsCount });
   }
 
+  function failClear() {
+    state.finished = true;
+    state.running = false;
+    clearInterval(state.timerInterval);
+    var elapsed = Date.now() - state.startTime;
+    timerEl.textContent = formatMs(elapsed);
+    displayEndOverlay('Stuck!', formatMs(elapsed), 'No valid moves left', true);
+  }
+
   function showEndOverlay(title, score) {
-    winTitleEl.textContent = title;
-    winStatEl.textContent = formatScore(score);
     var isNewBest = saveBestIfNeeded(score);
-    newBestMsgEl.textContent = isNewBest ? 'New Best!' : '';
+    displayEndOverlay(title, formatScore(score), isNewBest ? 'New Best!' : '', false);
+  }
+
+  function displayEndOverlay(title, statText, subMsg, isFail) {
+    winTitleEl.textContent = title;
+    winTitleEl.classList.toggle('fail', !!isFail);
+    winStatEl.textContent = statText;
+    newBestMsgEl.textContent = subMsg;
     winBestDisplayEl.textContent = bestScoreEl.textContent;
     setTimeout(function () {
       winOverlayEl.classList.add('show');
@@ -1072,13 +1185,27 @@
       handEl.appendChild(el);
     });
 
-    // score so far
-    cardsScoreEl.textContent = state.playsCount;
+    // score so far / cards left, depending on mode
+    cardsScoreEl.textContent = state.mode === 'clear-deck'
+      ? state.stock.length + state.hand.length
+      : state.playsCount;
+  }
+
+  function setMode(mode) {
+    if (state.mode === mode) return;
+    state.mode = mode;
+    modeTimeAttackBtn.classList.toggle('active', mode === 'time-attack');
+    modeClearDeckBtn.classList.toggle('active', mode === 'clear-deck');
+    cardsLabelEl.textContent = mode === 'clear-deck' ? 'Left' : 'Cards';
+    modeDescEl.textContent = MODE_DESCRIPTIONS[mode];
+    newGame();
   }
 
   document.getElementById('new-game-btn').addEventListener('click', newGame);
   document.getElementById('play-again-btn').addEventListener('click', newGame);
   stockPileEl.addEventListener('click', drawPileClicked);
+  modeTimeAttackBtn.addEventListener('click', function () { setMode('time-attack'); });
+  modeClearDeckBtn.addEventListener('click', function () { setMode('clear-deck'); });
 
   document.addEventListener('keydown', function (e) {
     var num = parseInt(e.key, 10);
@@ -1089,6 +1216,7 @@
     if (cardEl) playCard(index, cardEl);
   });
 
+  modeDescEl.textContent = MODE_DESCRIPTIONS[state.mode];
   loadBest();
   newGame();
 })();
