@@ -98,6 +98,13 @@
     align-items: center;
     gap: 24px;
     position: relative;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+  }
+
+  .table.counting-down {
+    opacity: 0.4;
+    filter: blur(1.5px);
+    pointer-events: none;
   }
 
   .center-row {
@@ -224,24 +231,51 @@
   }
 
   .hand .card.playing {
-    animation: play-out 0.28s ease forwards;
+    visibility: hidden;
     pointer-events: none;
   }
 
-  @keyframes play-out {
-    to { transform: translateY(-70px) scale(0.4); opacity: 0; }
+  .flying-card {
+    position: fixed;
+    z-index: 25;
+    margin: 0;
+    pointer-events: none;
+    transition: transform 0.42s cubic-bezier(0.3, 0.6, 0.3, 1);
   }
 
-  .hand .card.invalid {
-    animation: shake 0.32s ease;
+  .flying-card.reject-flash {
+    animation: reject-flash-bg 0.16s ease-in-out infinite;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.9), 0 6px 16px rgba(0, 0, 0, 0.4);
   }
 
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); }
-    40% { transform: translateX(8px); }
-    60% { transform: translateX(-6px); }
-    80% { transform: translateX(6px); }
+  @keyframes reject-flash-bg {
+    0%, 100% { background-color: #ffffff; }
+    50% { background-color: #ef4444; }
+  }
+
+  .draw-mover {
+    position: fixed;
+    z-index: 25;
+    pointer-events: none;
+    transition: transform 0.42s cubic-bezier(0.3, 0.6, 0.3, 1);
+  }
+
+  .draw-flipper {
+    width: 100%;
+    height: 100%;
+    perspective: 600px;
+  }
+
+  .draw-flipper .card {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    transition: transform 0.21s linear;
+  }
+
+  .card.card-back {
+    background: repeating-linear-gradient(135deg, #1e293b, #1e293b 6px, #111827 6px, #111827 12px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
   }
 
   .stuck-banner {
@@ -340,7 +374,54 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .countdown-overlay {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(3px);
+  }
+
+  .countdown-ring {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 3px solid rgba(234, 179, 8, 0.55);
+    animation: ring-pulse 0.7s ease-out infinite;
+  }
+
+  @keyframes ring-pulse {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+
+  .countdown-number {
+    position: relative;
+    font-size: 140px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.55), 0 0 70px rgba(234, 179, 8, 0.35);
+    animation: countdown-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+
+  .countdown-number.go {
+    color: #eab308;
+    font-size: 96px;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(234, 179, 8, 0.7), 0 0 80px rgba(234, 179, 8, 0.45);
+  }
+
+  @keyframes countdown-pop {
+    0% { transform: scale(0.25); opacity: 0; }
+    35% { transform: scale(1.2); opacity: 1; }
+    65% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.82); opacity: 0; }
+  }
+
   @media (max-width: 480px) {
+    .countdown-number { font-size: 96px; }
+    .countdown-number.go { font-size: 68px; }
+    .countdown-ring { width: 140px; height: 140px; }
+
     .card { width: 68px; height: 96px; }
     .card.big { width: 84px; height: 118px; }
     .center-pile-wrap { width: 84px; height: 118px; }
@@ -370,7 +451,7 @@
   </div>
 </div>
 
-<div class="table">
+<div class="table" id="game-table">
   <div class="center-row">
     <div class="stock-pile" id="stock-pile">
       <div class="stock-card-back"></div>
@@ -407,6 +488,11 @@
     <div class="win-best-row">Best: <span id="win-best-display">--</span></div>
     <button class="action" id="play-again-btn">Play Again</button>
   </div>
+</div>
+
+<div class="overlay countdown-overlay" id="countdown-overlay">
+  <div class="countdown-ring"></div>
+  <div class="countdown-number" id="countdown-number">3</div>
 </div>
 
 <script>
@@ -529,13 +615,19 @@
     startTime: 0,
     timerInterval: null,
     running: false,
-    finished: false
+    finished: false,
+    countingDown: false,
+    rejecting: false
   };
 
+  var gameTableEl = document.getElementById('game-table');
+  var countdownOverlayEl = document.getElementById('countdown-overlay');
+  var countdownNumberEl = document.getElementById('countdown-number');
   var timerEl = document.getElementById('timer');
   var bestScoreEl = document.getElementById('best-score');
   var cardsScoreEl = document.getElementById('cards-score');
   var stockCountEl = document.getElementById('stock-count');
+  var stockPileEl = document.getElementById('stock-pile');
   var centerPileEl = document.getElementById('center-pile');
   var handEl = document.getElementById('hand');
   var stuckBannerEl = document.getElementById('stuck-banner');
@@ -600,6 +692,32 @@
     return false;
   }
 
+  var COUNTDOWN_STEPS = ['3', '2', '1', 'GO!'];
+  var COUNTDOWN_STEP_MS = 700;
+
+  function runCountdown(onComplete) {
+    var i = 0;
+    countdownOverlayEl.classList.add('show');
+    function step() {
+      var text = COUNTDOWN_STEPS[i];
+      countdownNumberEl.classList.toggle('go', text === 'GO!');
+      countdownNumberEl.style.animation = 'none';
+      countdownNumberEl.textContent = text;
+      void countdownNumberEl.offsetWidth; // restart CSS animation
+      countdownNumberEl.style.animation = '';
+      i++;
+      if (i < COUNTDOWN_STEPS.length) {
+        setTimeout(step, COUNTDOWN_STEP_MS);
+      } else {
+        setTimeout(function () {
+          countdownOverlayEl.classList.remove('show');
+          onComplete();
+        }, COUNTDOWN_STEP_MS - 150);
+      }
+    }
+    step();
+  }
+
   function newGame() {
     clearInterval(state.timerInterval);
     var deck = buildDeck();
@@ -610,14 +728,23 @@
       state.hand.push(state.stock.pop());
     }
     state.playsCount = 0;
-    state.startTime = Date.now();
-    state.running = true;
+    state.running = false;
     state.finished = false;
+    state.countingDown = true;
+    state.rejecting = false;
     winOverlayEl.classList.remove('show');
     timerEl.textContent = formatMs(GAME_DURATION_MS);
     loadBest();
-    state.timerInterval = setInterval(tick, 100);
+    gameTableEl.classList.add('counting-down');
     render();
+
+    runCountdown(function () {
+      state.countingDown = false;
+      gameTableEl.classList.remove('counting-down');
+      state.startTime = Date.now();
+      state.running = true;
+      state.timerInterval = setInterval(tick, 100);
+    });
   }
 
   function tick() {
@@ -642,15 +769,14 @@
   }
 
   function playCard(index, cardEl) {
-    if (state.finished) return;
+    if (state.finished || state.countingDown || state.rejecting) return;
     var card = state.hand[index];
     var top = topCenter();
     var valid = matches(card, top);
     var stuck = isStuck();
 
     if (!valid && !stuck) {
-      cardEl.classList.add('invalid');
-      setTimeout(function () { cardEl.classList.remove('invalid'); }, 320);
+      bounceReject(cardEl);
       return;
     }
 
@@ -659,19 +785,172 @@
     }
 
     cardEl.classList.add('playing');
-    setTimeout(function () {
+    flyCardToCenter(cardEl, function () {
+      var drawnCard = null;
       state.center.push(card);
       state.playsCount++;
       if (state.stock.length > 0) {
-        state.hand[index] = state.stock.pop();
+        drawnCard = state.stock.pop();
+        state.hand[index] = drawnCard;
       } else {
         state.hand.splice(index, 1);
+      }
+      render();
+      if (drawnCard) {
+        animateDraw(index, drawnCard);
       }
       if (state.hand.length === 0 && state.stock.length === 0) {
         completeDeck();
       }
-      render();
-    }, 180);
+    });
+  }
+
+  function flyCardToCenter(cardEl, onArrive) {
+    var sourceRect = cardEl.getBoundingClientRect();
+    var destRect = centerPileEl.getBoundingClientRect();
+
+    var ghost = cardEl.cloneNode(true);
+    ghost.classList.remove('playing');
+    ghost.classList.add('flying-card');
+    var keyHint = ghost.querySelector('.key-hint');
+    if (keyHint) keyHint.remove();
+    ghost.style.left = sourceRect.left + 'px';
+    ghost.style.top = sourceRect.top + 'px';
+    ghost.style.width = sourceRect.width + 'px';
+    ghost.style.height = sourceRect.height + 'px';
+    document.body.appendChild(ghost);
+
+    var dx = (destRect.left + destRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+    var dy = (destRect.top + destRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+    var scaleX = destRect.width / sourceRect.width;
+    var scaleY = destRect.height / sourceRect.height;
+    var rotate = (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 10);
+
+    requestAnimationFrame(function () {
+      ghost.style.transform =
+        'translate(' + dx + 'px, ' + dy + 'px) scale(' + scaleX + ', ' + scaleY + ') rotate(' + rotate + 'deg)';
+    });
+
+    setTimeout(function () {
+      ghost.remove();
+      onArrive();
+    }, 420);
+  }
+
+  function bounceReject(cardEl) {
+    state.rejecting = true;
+    var sourceRect = cardEl.getBoundingClientRect();
+    var destRect = centerPileEl.getBoundingClientRect();
+
+    var ghost = cardEl.cloneNode(true);
+    ghost.classList.add('flying-card');
+    var keyHint = ghost.querySelector('.key-hint');
+    if (keyHint) keyHint.remove();
+    ghost.style.left = sourceRect.left + 'px';
+    ghost.style.top = sourceRect.top + 'px';
+    ghost.style.width = sourceRect.width + 'px';
+    ghost.style.height = sourceRect.height + 'px';
+    ghost.style.transition = 'none';
+    document.body.appendChild(ghost);
+    cardEl.style.visibility = 'hidden';
+
+    var partialDx = ((destRect.left + destRect.width / 2) - (sourceRect.left + sourceRect.width / 2)) * 0.5;
+    var partialDy = ((destRect.top + destRect.height / 2) - (sourceRect.top + sourceRect.height / 2)) * 0.5;
+
+    function moveTo(dx, dy, rotate, scale, durationMs) {
+      ghost.style.transition = 'transform ' + durationMs + 'ms ease';
+      ghost.style.transform =
+        'translate(' + dx + 'px, ' + dy + 'px) rotate(' + rotate + 'deg) scale(' + scale + ')';
+    }
+
+    var approachMs = 170;
+    requestAnimationFrame(function () {
+      moveTo(partialDx, partialDy, -5, 0.94, approachMs);
+    });
+
+    // Wiggle in place at the approach point, then return home.
+    var wiggle = [
+      { dx: -10, rotate: -9, t: 60 },
+      { dx: 9, rotate: 9, t: 60 },
+      { dx: -7, rotate: -6, t: 55 },
+      { dx: 6, rotate: 6, t: 55 },
+      { dx: 0, rotate: 0, t: 55 }
+    ];
+    setTimeout(function () {
+      ghost.classList.add('reject-flash');
+    }, approachMs);
+
+    var elapsed = approachMs;
+    wiggle.forEach(function (step) {
+      setTimeout(function () {
+        moveTo(partialDx + step.dx, partialDy, step.rotate, 0.94, step.t);
+      }, elapsed);
+      elapsed += step.t;
+    });
+
+    setTimeout(function () {
+      ghost.classList.remove('reject-flash');
+      moveTo(0, 0, 0, 1, 240);
+    }, elapsed);
+
+    setTimeout(function () {
+      ghost.remove();
+      cardEl.style.visibility = 'visible';
+      state.rejecting = false;
+    }, elapsed + 240);
+  }
+
+  function animateDraw(index, cardData) {
+    var cardEl = handEl.children[index];
+    if (!cardEl) return;
+    var destRect = cardEl.getBoundingClientRect();
+    var sourceRect = stockPileEl.getBoundingClientRect();
+    cardEl.style.visibility = 'hidden';
+
+    var mover = document.createElement('div');
+    mover.className = 'draw-mover';
+    mover.style.left = sourceRect.left + 'px';
+    mover.style.top = sourceRect.top + 'px';
+    mover.style.width = sourceRect.width + 'px';
+    mover.style.height = sourceRect.height + 'px';
+
+    var flipper = document.createElement('div');
+    flipper.className = 'draw-flipper';
+
+    var face = document.createElement('div');
+    face.className = 'card card-back';
+
+    flipper.appendChild(face);
+    mover.appendChild(flipper);
+    document.body.appendChild(mover);
+
+    var dx = (destRect.left + destRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+    var dy = (destRect.top + destRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+    var scaleX = destRect.width / sourceRect.width;
+    var scaleY = destRect.height / sourceRect.height;
+
+    requestAnimationFrame(function () {
+      mover.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + scaleX + ', ' + scaleY + ')';
+      face.style.transform = 'rotateY(90deg)';
+    });
+
+    // Swap from face-down to face-up while edge-on (~90deg), so the flip reads naturally.
+    setTimeout(function () {
+      face.classList.remove('card-back');
+      face.innerHTML = cardFaceHtml(cardData);
+      face.style.transition = 'none';
+      face.style.transform = 'rotateY(-90deg)';
+      void face.offsetWidth;
+      face.style.transition = '';
+      requestAnimationFrame(function () {
+        face.style.transform = 'rotateY(0deg)';
+      });
+    }, 210);
+
+    setTimeout(function () {
+      mover.remove();
+      cardEl.style.visibility = 'visible';
+    }, 430);
   }
 
   function completeDeck() {
@@ -716,7 +995,7 @@
 
     // stock count
     stockCountEl.textContent = state.stock.length;
-    document.getElementById('stock-pile').style.visibility = state.stock.length > 0 ? 'visible' : 'hidden';
+    stockPileEl.style.visibility = state.stock.length > 0 ? 'visible' : 'hidden';
 
     // hand
     handEl.innerHTML = '';
