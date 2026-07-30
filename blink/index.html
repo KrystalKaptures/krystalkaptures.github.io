@@ -504,9 +504,10 @@
     { key: 'yellow', hex: '#eab308' },
     { key: 'green', hex: '#16a34a' },
     { key: 'blue', hex: '#2563eb' },
-    { key: 'purple', hex: '#9333ea' }
+    { key: 'gray', hex: '#6b7280' },
+    { key: 'brown', hex: '#92603a' }
   ];
-  var SHAPES = ['circle', 'square', 'triangle', 'star', 'diamond'];
+  var SHAPES = ['star', 'moon', 'triangle', 'lightning', 'drop', 'flower'];
   var COUNTS = [1, 2, 3, 4, 5];
   var DECK_SIZE = 60;
   var HAND_SIZE = 5;
@@ -539,16 +540,28 @@
   // ---- shape rendering ----
   function shapeSvg(shapeKey, hex) {
     switch (shapeKey) {
-      case 'circle':
-        return '<circle cx="12" cy="12" r="9" fill="' + hex + '"/>';
-      case 'square':
-        return '<rect x="3" y="3" width="18" height="18" rx="2" fill="' + hex + '"/>';
-      case 'triangle':
-        return '<polygon points="12,3 21,20 3,20" fill="' + hex + '"/>';
       case 'star':
         return '<polygon points="12,2 14.7,9.1 22,9.6 16.3,14.3 18.2,21.4 12,17.3 5.8,21.4 7.7,14.3 2,9.6 9.3,9.1" fill="' + hex + '"/>';
-      case 'diamond':
-        return '<polygon points="12,2 22,12 12,22 2,12" fill="' + hex + '"/>';
+      case 'triangle':
+        return '<polygon points="12,3 21,20 3,20" fill="' + hex + '"/>';
+      case 'moon':
+        return '<path d="M21,12.79 A9,9 0 1,1 11.21,3 A7,7 0 0,0 21,12.79 Z" fill="' + hex + '"/>';
+      case 'lightning':
+        return '<polygon points="13,2 5,14 11,14 9,22 19,10 13,10" fill="' + hex + '"/>';
+      case 'drop':
+        return (
+          '<circle cx="12" cy="14" r="7" fill="' + hex + '"/>' +
+          '<polygon points="12,2 8,10 16,10" fill="' + hex + '"/>'
+        );
+      case 'flower':
+        return (
+          '<circle cx="12" cy="6.5" r="4.2" fill="' + hex + '"/>' +
+          '<circle cx="17.23" cy="10.3" r="4.2" fill="' + hex + '"/>' +
+          '<circle cx="15.23" cy="16.45" r="4.2" fill="' + hex + '"/>' +
+          '<circle cx="8.77" cy="16.45" r="4.2" fill="' + hex + '"/>' +
+          '<circle cx="6.77" cy="10.3" r="4.2" fill="' + hex + '"/>' +
+          '<circle cx="12" cy="12" r="3.4" fill="' + hex + '"/>'
+        );
       default:
         return '';
     }
