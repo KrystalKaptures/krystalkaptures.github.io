@@ -118,6 +118,11 @@
     position: relative;
     width: 74px;
     height: 104px;
+    cursor: pointer;
+  }
+
+  .stock-pile:hover .stock-card-back:nth-child(1) {
+    transform: translateY(-3px);
   }
 
   .stock-card-back {
@@ -126,6 +131,7 @@
     border-radius: 10px;
     background: repeating-linear-gradient(135deg, #1e293b, #1e293b 6px, #111827 6px, #111827 12px);
     border: 2px solid rgba(255, 255, 255, 0.25);
+    transition: transform 0.15s ease;
   }
 
   .stock-pile .stock-card-back:nth-child(1) { transform: translate(0, 0); }
@@ -277,16 +283,6 @@
     background: repeating-linear-gradient(135deg, #1e293b, #1e293b 6px, #111827 6px, #111827 12px);
     border: 2px solid rgba(255, 255, 255, 0.25);
   }
-
-  .stuck-banner {
-    font-size: 12px;
-    color: #fca5a5;
-    text-align: center;
-    min-height: 16px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .stuck-banner.show { opacity: 1; }
 
   .controls {
     display: flex;
@@ -465,7 +461,6 @@
   <div>
     <div class="hand-label">Your hand — tap a match</div>
     <div class="hand" id="hand"></div>
-    <div class="stuck-banner" id="stuck-banner">No matches — tap any card to force play (+5s penalty)</div>
   </div>
 
   <div class="controls">
@@ -475,7 +470,8 @@
 
 <p class="rules">
   Play a hand card onto the center pile if it shares a color, shape, or count with the top card.
-  Your hand refills from the stock automatically. You have 60 seconds — your score is how many
+  Your hand refills from the stock automatically. No matches in hand? Tap the draw pile to burn
+  its top card onto the center pile and keep going. You have 60 seconds — your score is how many
   cards you play. Clear the whole deck before time's up and you're ranked by how much time you
   had left instead.
 </p>
@@ -511,7 +507,6 @@
   var COUNTS = [1, 2, 3, 4, 5];
   var DECK_SIZE = 60;
   var HAND_SIZE = 5;
-  var FORCE_PENALTY_MS = 5000;
   var GAME_DURATION_MS = 60000;
   var COOKIE_NAME = 'blinkBestScore';
 
@@ -630,7 +625,8 @@
     running: false,
     finished: false,
     countingDown: false,
-    rejecting: false
+    rejecting: false,
+    drawing: false
   };
 
   var gameTableEl = document.getElementById('game-table');
@@ -643,7 +639,6 @@
   var stockPileEl = document.getElementById('stock-pile');
   var centerPileEl = document.getElementById('center-pile');
   var handEl = document.getElementById('hand');
-  var stuckBannerEl = document.getElementById('stuck-banner');
   var winOverlayEl = document.getElementById('win-overlay');
   var winTitleEl = document.getElementById('win-title');
   var winStatEl = document.getElementById('win-stat');
@@ -745,6 +740,7 @@
     state.finished = false;
     state.countingDown = true;
     state.rejecting = false;
+    state.drawing = false;
     winOverlayEl.classList.remove('show');
     timerEl.textContent = formatMs(GAME_DURATION_MS);
     loadBest();
@@ -782,19 +778,14 @@
   }
 
   function playCard(index, cardEl) {
-    if (state.finished || state.countingDown || state.rejecting) return;
+    if (state.finished || state.countingDown || state.rejecting || state.drawing) return;
     var card = state.hand[index];
     var top = topCenter();
     var valid = matches(card, top);
-    var stuck = isStuck();
 
-    if (!valid && !stuck) {
+    if (!valid) {
       bounceReject(cardEl);
       return;
-    }
-
-    if (!valid && stuck) {
-      state.startTime -= FORCE_PENALTY_MS;
     }
 
     cardEl.classList.add('playing');
@@ -810,7 +801,7 @@
       }
       render();
       if (drawnCard) {
-        animateDraw(index, drawnCard);
+        flipFromStock(handEl.children[index], drawnCard);
       }
       if (state.hand.length === 0 && state.stock.length === 0) {
         completeDeck();
@@ -913,12 +904,11 @@
     }, elapsed + 240);
   }
 
-  function animateDraw(index, cardData) {
-    var cardEl = handEl.children[index];
-    if (!cardEl) return;
-    var destRect = cardEl.getBoundingClientRect();
+  function flipFromStock(destEl, cardData, onDone) {
+    if (!destEl) return;
+    var destRect = destEl.getBoundingClientRect();
     var sourceRect = stockPileEl.getBoundingClientRect();
-    cardEl.style.visibility = 'hidden';
+    destEl.style.visibility = 'hidden';
 
     var mover = document.createElement('div');
     mover.className = 'draw-mover';
@@ -962,8 +952,68 @@
 
     setTimeout(function () {
       mover.remove();
-      cardEl.style.visibility = 'visible';
+      destEl.style.visibility = 'visible';
+      if (onDone) onDone();
     }, 430);
+  }
+
+  function drawPileClicked() {
+    if (state.finished || state.countingDown || state.rejecting || state.drawing) return;
+    if (state.stock.length === 0) return;
+    if (isStuck()) {
+      drawToCenter();
+    } else {
+      rejectDrawPile();
+    }
+  }
+
+  function drawToCenter() {
+    state.drawing = true;
+    var drawnCard = state.stock.pop();
+    state.center.push(drawnCard);
+    render();
+    flipFromStock(centerPileEl.lastElementChild, drawnCard, function () {
+      state.drawing = false;
+    });
+  }
+
+  function rejectDrawPile() {
+    state.drawing = true;
+    var sourceRect = stockPileEl.getBoundingClientRect();
+
+    var ghost = document.createElement('div');
+    ghost.className = 'card card-back flying-card';
+    ghost.style.left = sourceRect.left + 'px';
+    ghost.style.top = sourceRect.top + 'px';
+    ghost.style.width = sourceRect.width + 'px';
+    ghost.style.height = sourceRect.height + 'px';
+    ghost.style.transition = 'none';
+    document.body.appendChild(ghost);
+
+    function moveTo(dy, scale, durationMs) {
+      ghost.style.transition = 'transform ' + durationMs + 'ms ease';
+      ghost.style.transform = 'translate(0, ' + dy + 'px) scale(' + scale + ')';
+    }
+
+    var liftMs = 150;
+    requestAnimationFrame(function () {
+      moveTo(-16, 1.05, liftMs);
+    });
+
+    setTimeout(function () {
+      ghost.classList.add('reject-flash');
+    }, liftMs);
+
+    var flashMs = 300;
+    setTimeout(function () {
+      ghost.classList.remove('reject-flash');
+      moveTo(0, 1, 200);
+    }, liftMs + flashMs);
+
+    setTimeout(function () {
+      ghost.remove();
+      state.drawing = false;
+    }, liftMs + flashMs + 200);
   }
 
   function completeDeck() {
@@ -1024,13 +1074,11 @@
 
     // score so far
     cardsScoreEl.textContent = state.playsCount;
-
-    // stuck banner
-    stuckBannerEl.classList.toggle('show', isStuck());
   }
 
   document.getElementById('new-game-btn').addEventListener('click', newGame);
   document.getElementById('play-again-btn').addEventListener('click', newGame);
+  stockPileEl.addEventListener('click', drawPileClicked);
 
   document.addEventListener('keydown', function (e) {
     var num = parseInt(e.key, 10);
