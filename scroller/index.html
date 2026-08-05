@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Krystal Runs Forever 💛</title>
+<style>
+  :root{
+    --accent:#e07a8b;
+    --accent2:#f2a6b3;
+    --panel:#fff7ef;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#7fc7e8;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;}
+  #cv{display:block;width:100vw;height:100vh;touch-action:none;cursor:pointer;}
+  #tag{
+    position:fixed;left:14px;top:14px;z-index:5;
+    background:rgba(42,33,28,.55);color:#fff;font-weight:700;font-size:13px;
+    letter-spacing:.2px;padding:7px 13px;border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;
+    display:flex;align-items:center;gap:6px;
+  }
+  #hint{
+    position:fixed;left:14px;bottom:14px;z-index:5;
+    background:rgba(42,33,28,.4);color:#fff;font-size:11.5px;font-weight:600;
+    padding:6px 11px;border-radius:14px;pointer-events:none;opacity:.85;
+    transition:opacity .4s ease;
+  }
+  #hint.hide{opacity:0;}
+  #speedChip{
+    position:fixed;right:14px;top:14px;z-index:5;
+    background:rgba(42,33,28,.55);color:#fff;font-weight:700;font-size:12px;
+    padding:7px 12px;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.25);
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="tag">💛 Krystal, walking forever &rarr;</div>
+<div id="speedChip">▶ normal</div>
+<div id="hint">tap to pause · ← → to change pace</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   A tiny endless side-scroller: Krystal walks in place on the left third of
+   the screen while the world scrolls past forever, Punch-Out-training-run
+   style. Reuses the walk sprite sheet from ../birthday/ — same slicing logic
+   as birthday/js/engine.js + render-pet.js (4 cols x 4 rows, row 2 = facing
+   right).
+   --------------------------------------------------------------------------- */
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const hint = document.getElementById('hint');
+const speedChip = document.getElementById('speedChip');
+
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------- sprite sheet (same layout as birthday/js/config.js SHEETS.walk) ---------- */
+const WALK = { src:'../birthday/k-walking3.png', cols:4, rows:4, ready:false, fw:0, fh:0, img:null, rowRight:2 };
+(function loadWalk(){
+  const img = new Image();
+  img.onload = ()=>{
+    WALK.img = img;
+    WALK.fw = Math.floor(img.width / WALK.cols);
+    WALK.fh = Math.floor(img.height / WALK.rows);
+    WALK.ready = true;
+  };
+  img.src = WALK.src;
+})();
+
+/* ---------- world state ---------- */
+let scroll = 0;         // total distance travelled (px, world space)
+let speed = 130;        // px/sec at "normal" pace
+let paused = false;
+const SPEEDS = [ {mul:0.5, label:'slow'}, {mul:1, label:'normal'}, {mul:1.8, label:'fast'} ];
+let speedIdx = 1;
+
+let frame = 0, frameTime = 0;
+const FPS = 9;
+let stepBob = 0;
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  if (paused) return;
+  const mul = SPEEDS[speedIdx].mul;
+  const v = speed * mul;
+  scroll += v * dt;
+  stepBob += v * dt;
+
+  frameTime += dt * mul;
+  if (frameTime >= 1/FPS){ frameTime = 0; frame = (frame + 1) % WALK.cols; }
+}
+
+/* ---------- little parallax scenery, generated procedurally so no extra art
+   is needed — tiled shapes repeated with a fixed period and wrapped by the
+   scroll offset (each layer scrolls at its own fraction of world speed). ---------- */
+function tiled(period, factor, count, drawFn){
+  const off = (scroll * factor) % period;
+  const start = -off - period;
+  for (let i = -1; i * period + start < W + period; i++){
+    drawFn(start + i * period, period);
+  }
+}
+
+function draw(){
+  ctx.clearRect(0, 0, W, H);
+  const groundY = H * 0.80;
+
+  drawSky(groundY);
+  drawHills(groundY);
+  drawClouds();
+  drawTrees(groundY);
+  drawGround(groundY);
+  drawFigure(groundY);
+  drawGrassFringe(groundY);
+}
+
+function drawSky(groundY){
+  const g = ctx.createLinearGradient(0, 0, 0, groundY);
+  g.addColorStop(0, '#6ec3ec');
+  g.addColorStop(0.65, '#bfe6f2');
+  g.addColorStop(1, '#fdeede');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, groundY);
+
+  // sun, fixed — she's walking under an endless afternoon
+  ctx.save();
+  ctx.globalAlpha = .9;
+  ctx.fillStyle = '#fff6d8';
+  ctx.beginPath(); ctx.arc(W*0.84, H*0.18, 46, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = .35;
+  ctx.beginPath(); ctx.arc(W*0.84, H*0.18, 70, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawHills(groundY){
+  const baseY = groundY - H*0.02;
+  ctx.fillStyle = '#a9d9c2';
+  tiled(520, 0.12, 0, (x, period)=>{
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.quadraticCurveTo(x + period*0.25, baseY - H*0.13, x + period*0.5, baseY);
+    ctx.quadraticCurveTo(x + period*0.75, baseY - H*0.09, x + period, baseY);
+    ctx.lineTo(x + period, baseY + 40);
+    ctx.lineTo(x, baseY + 40);
+    ctx.closePath(); ctx.fill();
+  });
+  ctx.fillStyle = '#93cdb0';
+  tiled(360, 0.20, 0, (x, period)=>{
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.quadraticCurveTo(x + period*0.5, baseY - H*0.075, x + period, baseY);
+    ctx.lineTo(x + period, baseY + 40);
+    ctx.lineTo(x, baseY + 40);
+    ctx.closePath(); ctx.fill();
+  });
+}
+
+function drawClouds(){
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  tiled(430, 0.05, 0, (x)=>{
+    const y = H*0.14;
+    puff(x, y, 30); puff(x+26, y-10, 22); puff(x+50, y, 26); puff(x+22, y+8, 24);
+  });
+  tiled(610, 0.03, 0, (x)=>{
+    const y = H*0.26;
+    puff(x, y, 20); puff(x+18, y-6, 16); puff(x+34, y, 18);
+  });
+  function puff(cx, cy, r){ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); }
+}
+
+function drawTrees(groundY){
+  const baseY = groundY - 4;
+  tiled(230, 0.42, 0, (x)=>{
+    const h = 74, trunkW = 8;
+    ctx.fillStyle = '#c99a6b';
+    ctx.fillRect(x - trunkW/2, baseY - h*0.42, trunkW, h*0.42);
+    ctx.fillStyle = '#6fb389';
+    ctx.beginPath(); ctx.arc(x, baseY - h*0.42, 26, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#7fc79a';
+    ctx.beginPath(); ctx.arc(x - 12, baseY - h*0.55, 18, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 13, baseY - h*0.58, 16, 0, Math.PI*2); ctx.fill();
+  });
+  tiled(340, 0.42, 0, (x)=>{
+    const bx = x + 110;
+    ctx.fillStyle = '#8fcf9e';
+    ctx.beginPath(); ctx.ellipse(bx, baseY - 10, 20, 14, 0, 0, Math.PI*2); ctx.fill();
+  });
+}
+
+function drawGround(groundY){
+  ctx.fillStyle = '#8fbf6a';
+  ctx.fillRect(0, groundY, W, H - groundY);
+
+  // a worn dirt path down the middle she's forever trotting along
+  const pathTop = groundY + (H-groundY)*0.18;
+  const pathH = (H-groundY)*0.5;
+  ctx.fillStyle = '#d8b988';
+  ctx.fillRect(0, pathTop, W, pathH);
+  ctx.fillStyle = 'rgba(0,0,0,.06)';
+  ctx.fillRect(0, pathTop, W, 4);
+  ctx.fillRect(0, pathTop+pathH-4, W, 4);
+
+  // dashed centre line scrolling at full speed — the clearest motion cue
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  tiled(70, 1, 0, (x)=>{
+    ctx.fillRect(x, pathTop + pathH/2 - 3, 34, 6);
+  });
+
+  // little pebbles for texture
+  ctx.fillStyle = 'rgba(120,90,60,.35)';
+  tiled(53, 1, 0, (x)=>{ ctx.beginPath(); ctx.arc(x+10, pathTop + pathH*0.28, 3, 0, Math.PI*2); ctx.fill(); });
+  tiled(61, 1, 0, (x)=>{ ctx.beginPath(); ctx.arc(x+30, pathTop + pathH*0.74, 2.4, 0, Math.PI*2); ctx.fill(); });
+}
+
+function drawGrassFringe(groundY){
+  ctx.fillStyle = '#79ab58';
+  tiled(26, 1.15, 0, (x)=>{
+    ctx.beginPath();
+    ctx.moveTo(x, groundY);
+    ctx.lineTo(x+6, groundY - 9 - Math.sin((x+scroll)*0.05)*2);
+    ctx.lineTo(x+12, groundY);
+    ctx.closePath(); ctx.fill();
+  });
+}
+
+/* ---------- Krystal, fixed in place, forever mid-stride ---------- */
+function drawFigure(groundY){
+  const fx = W * 0.28;
+
+  const dispH = Math.min(240, H * 0.46);
+  const dispW = WALK.ready ? dispH * (WALK.fw / WALK.fh) : dispH * 0.62;
+  const footInset = 0.07;
+  const foot = footInset * dispH;
+  const bob = paused ? 0 : Math.abs(Math.sin(stepBob * 0.14)) * 4;
+
+  const feetX = fx, feetY = groundY + foot;
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.beginPath(); ctx.ellipse(feetX, groundY - 2, dispW*0.30, dispH*0.045, 0, 0, Math.PI*2); ctx.fill();
+
+  if (WALK.ready){
+    const frameX = frame * WALK.fw;
+    const frameY = WALK.rowRight * WALK.fh;
+    ctx.drawImage(
+      WALK.img,
+      frameX, frameY, WALK.fw, WALK.fh,
+      feetX - dispW/2, feetY - dispH - bob, dispW, dispH
+    );
+  } else {
+    // brief placeholder while the sprite sheet loads
+    ctx.fillStyle = '#f2a6b3';
+    ctx.beginPath(); ctx.ellipse(feetX, feetY - dispH*0.5, dispW*0.22, dispH*0.32, 0, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+/* ---------- controls ---------- */
+function setSpeed(i){
+  speedIdx = Math.max(0, Math.min(SPEEDS.length-1, i));
+  speedChip.textContent = (paused ? '⏸ ' : '▶ ') + SPEEDS[speedIdx].label;
+}
+function togglePause(){
+  paused = !paused;
+  setSpeed(speedIdx);
+  hint.classList.add('hide');
+}
+cv.addEventListener('pointerdown', togglePause);
+window.addEventListener('keydown', (e)=>{
+  if (e.code === 'Space'){ e.preventDefault(); togglePause(); }
+  else if (e.code === 'ArrowRight'){ setSpeed(speedIdx+1); }
+  else if (e.code === 'ArrowLeft'){ setSpeed(speedIdx-1); }
+});
+
+setSpeed(speedIdx);
+setTimeout(()=> hint.classList.add('hide'), 4500);
+requestAnimationFrame((t)=>{ last = t; requestAnimationFrame(loop); });
+</script>
+</body>
+</html>
