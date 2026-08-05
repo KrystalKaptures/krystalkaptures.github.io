@@ -21,6 +21,13 @@
     box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;
     display:flex;align-items:center;gap:6px;
   }
+  #skyChip{
+    position:fixed;left:14px;top:54px;z-index:5;
+    background:rgba(42,33,28,.5);color:#fff;font-weight:600;font-size:11.5px;
+    letter-spacing:.1px;padding:6px 12px;border-radius:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.22);pointer-events:none;
+    white-space:nowrap;
+  }
   #hint{
     position:fixed;left:14px;bottom:14px;z-index:5;
     background:rgba(42,33,28,.4);color:#fff;font-size:11.5px;font-weight:600;
@@ -28,20 +35,71 @@
     transition:opacity .4s ease;
   }
   #hint.hide{opacity:0;}
-  #speedChip{
+  #playChip{
     position:fixed;right:14px;top:14px;z-index:5;
     background:rgba(42,33,28,.55);color:#fff;font-weight:700;font-size:12px;
     padding:7px 12px;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.25);
     pointer-events:none;
+  }
+  #warpBar{
+    position:fixed;left:14px;top:92px;z-index:5;
+    display:flex;gap:6px;
+  }
+  .warpBtn{
+    background:rgba(42,33,28,.5);color:#fff;font-weight:600;font-size:11px;
+    padding:6px 11px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.2);
+    cursor:pointer;user-select:none;transition:background .15s ease;
+  }
+  .warpBtn.active{ background:var(--accent); }
+  #compass{
+    position:fixed;right:14px;top:56px;z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    pointer-events:none;
+  }
+  #compassDial{
+    position:relative;width:58px;height:58px;border-radius:50%;
+    background:rgba(42,33,28,.55);border:2px solid rgba(255,255,255,.35);
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .cdir{ position:absolute;font-size:9px;font-weight:800;color:rgba(255,255,255,.7); }
+  .cdir.n{ top:3px;left:50%;transform:translateX(-50%);color:#fff; }
+  .cdir.e{ top:50%;right:4px;transform:translateY(-50%); }
+  .cdir.s{ bottom:3px;left:50%;transform:translateX(-50%); }
+  .cdir.w{ top:50%;left:4px;transform:translateY(-50%); }
+  #compassNeedle{
+    position:absolute;left:50%;top:50%;width:0;height:0;
+    margin-left:-4px;margin-top:-21px;transform-origin:4px 21px;
+    border-left:4px solid transparent;border-right:4px solid transparent;
+    border-bottom:21px solid var(--accent);
+  }
+  #compassReadout{
+    font-size:10.5px;font-weight:700;color:#fff;background:rgba(42,33,28,.5);
+    padding:3px 10px;border-radius:10px;white-space:nowrap;
   }
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 <div id="tag">💛 Krystal, walking forever &rarr;</div>
-<div id="speedChip">▶ normal</div>
-<div id="hint">tap to pause · ← → to change pace</div>
+<div id="skyChip">🧭 loading sky…</div>
+<div id="warpBar">
+  <span class="warpBtn" data-i="0">🕐 Live</span>
+  <span class="warpBtn" data-i="1">⏩ 1 hr/s</span>
+  <span class="warpBtn" data-i="2">⏩ 1 day/s</span>
+  <span class="warpBtn" data-i="3">⏩ 1 wk/s</span>
+</div>
+<div id="playChip">▶</div>
+<div id="compass">
+  <div id="compassDial">
+    <span class="cdir n">N</span><span class="cdir e">E</span><span class="cdir s">S</span><span class="cdir w">W</span>
+    <div id="compassNeedle"></div>
+  </div>
+  <div id="compassReadout">0° N</div>
+</div>
+<div id="hint">tap to pause · space to jump · hold ← → to turn · 1-4 time warp</div>
 
+<!-- Real sun/moon/planet/star positions (Astronomy Engine, MIT license, cosinekitty/astronomy) -->
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 <script>
 /* ---------------------------------------------------------------------------
    A tiny endless side-scroller: Krystal walks in place on the left third of
@@ -49,12 +107,22 @@
    style. Reuses the walk sprite sheet from ../birthday/ — same slicing logic
    as birthday/js/engine.js + render-pet.js (4 cols x 4 rows, row 2 = facing
    right).
+
+   The sky overhead is real: current time + weather for Spotsylvania, VA
+   (22407), and the true positions of the sun, moon, naked-eye planets and
+   a catalog of bright stars, reprojected live as she turns — hold the left
+   or right arrow to spin her heading (and the whole sky + field with it),
+   with a compass in the corner showing which way she's facing.
    --------------------------------------------------------------------------- */
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const hint = document.getElementById('hint');
-const speedChip = document.getElementById('speedChip');
+const playChip = document.getElementById('playChip');
+const skyChip = document.getElementById('skyChip');
+const warpBar = document.getElementById('warpBar');
+const compassNeedle = document.getElementById('compassNeedle');
+const compassReadout = document.getElementById('compassReadout');
 
 let W = 0, H = 0, DPR = 1;
 function resize(){
@@ -65,6 +133,10 @@ function resize(){
 }
 window.addEventListener('resize', resize);
 resize();
+
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerpColor(c1, c2, t){ return [0,1,2].map(i => Math.round(c1[i] + (c2[i]-c1[i]) * t)); }
+function rgbStr(c, a=1){ return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
 
 /* ---------- sprite sheet (same layout as birthday/js/config.js SHEETS.walk) ---------- */
 const WALK = { src:'../birthday/k-walking3.png', cols:4, rows:4, ready:false, fw:0, fh:0, img:null, rowRight:2 };
@@ -79,21 +151,312 @@ const WALK = { src:'../birthday/k-walking3.png', cols:4, rows:4, ready:false, fw
   img.src = WALK.src;
 })();
 
+/* =============================================================================
+   REAL SKY — location, time, weather, and astronomy
+   ============================================================================= */
+
+const LOCATION = { lat: 38.2732, lon: -77.5558, elevation: 70, tz: 'America/New_York', label: 'Spotsylvania, VA' };
+const FOV = 180; // degrees of horizontal field of view, centered on wherever she's currently facing
+
+/* ---------- weather (Open-Meteo, no key required) ---------- */
+let weather = { ready:false, tempF:72, code:0, cloud:20, icon:'☀️', desc:'Clear' };
+
+function weatherInfo(code){
+  if (code === 0) return { icon:'☀️', desc:'Clear' };
+  if (code <= 3)  return { icon:'⛅', desc: code===1 ? 'Mostly Clear' : code===2 ? 'Partly Cloudy' : 'Overcast' };
+  if (code === 45 || code === 48) return { icon:'🌫️', desc:'Fog' };
+  if (code >= 51 && code <= 57)   return { icon:'🌦️', desc:'Drizzle' };
+  if (code >= 61 && code <= 67)   return { icon:'🌧️', desc:'Rain' };
+  if (code >= 71 && code <= 77)   return { icon:'🌨️', desc:'Snow' };
+  if (code === 80 || code === 81 || code === 82) return { icon:'🌧️', desc:'Rain Showers' };
+  if (code === 85 || code === 86) return { icon:'🌨️', desc:'Snow Showers' };
+  if (code >= 95) return { icon:'⛈️', desc:'Thunderstorm' };
+  return { icon:'⛅', desc:'Cloudy' };
+}
+
+async function fetchWeather(){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LOCATION.lat}&longitude=${LOCATION.lon}` +
+                `&current=temperature_2m,weather_code,cloud_cover&temperature_unit=fahrenheit&timezone=${encodeURIComponent(LOCATION.tz)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const c = data.current;
+    const info = weatherInfo(c.weather_code);
+    weather = { ready:true, tempF:c.temperature_2m, code:c.weather_code, cloud:c.cloud_cover, icon:info.icon, desc:info.desc };
+  }catch(e){ /* keep prior/default weather — the scene still works offline */ }
+  updateSkyChip();
+}
+fetchWeather();
+setInterval(fetchWeather, 15 * 60 * 1000);
+
+/* ---------- bright star catalog (J2000 RA/Dec), for a viewer near lat 38°N ----------
+   The Big Dipper (Ursa Major) + Polaris are circumpolar here, so they're the
+   most reliable "facing north" landmarks; the rest are the sky's brightest. */
+const STARS = [
+  { n:'Sirius',    ra:6.7525,  dec:-16.7161, mag:-1.46 },
+  { n:'Arcturus',  ra:14.2611, dec: 19.1822, mag:-0.05 },
+  { n:'Vega',      ra:18.6156, dec: 38.7836, mag: 0.03 },
+  { n:'Capella',   ra:5.2781,  dec: 45.9981, mag: 0.08 },
+  { n:'Rigel',     ra:5.2422,  dec: -8.2017, mag: 0.13 },
+  { n:'Procyon',   ra:7.6550,  dec:  5.2250, mag: 0.34 },
+  { n:'Betelgeuse',ra:5.9194,  dec:  7.4069, mag: 0.42 },
+  { n:'Altair',    ra:19.8464, dec:  8.8683, mag: 0.76 },
+  { n:'Aldebaran', ra:4.5986,  dec: 16.5092, mag: 0.85 },
+  { n:'Spica',     ra:13.4200, dec:-11.1614, mag: 0.97 },
+  { n:'Antares',   ra:16.4900, dec:-26.4319, mag: 1.09 },
+  { n:'Pollux',    ra:7.7553,  dec: 28.0261, mag: 1.14 },
+  { n:'Fomalhaut', ra:22.9608, dec:-29.6222, mag: 1.16 },
+  { n:'Deneb',     ra:20.6905, dec: 45.2803, mag: 1.25 },
+  { n:'Regulus',   ra:10.1395, dec: 11.9672, mag: 1.36 },
+  { n:'Castor',    ra:7.5766,  dec: 31.8883, mag: 1.58 },
+  { n:'Bellatrix', ra:5.4189,  dec:  6.3497, mag: 1.64 },
+  { n:'Elnath',    ra:5.4383,  dec: 28.6075, mag: 1.65 },
+  { n:'Alnilam',   ra:5.6035,  dec: -1.2019, mag: 1.69 },
+  { n:'Alioth',    ra:12.9006, dec: 55.9597, mag: 1.77 },
+  { n:'Dubhe',     ra:11.0622, dec: 61.7508, mag: 1.79 },
+  { n:'Mirfak',    ra:3.4053,  dec: 49.8611, mag: 1.79 },
+  { n:'Alkaid',    ra:13.7923, dec: 49.3133, mag: 1.86 },
+  { n:'Polaris',   ra:2.5303,  dec: 89.2642, mag: 1.98 },
+  { n:'Denebola',  ra:11.8177, dec: 14.5719, mag: 2.14 },
+  { n:'Mizar',     ra:13.3989, dec: 54.9253, mag: 2.23 },
+  { n:'Merak',     ra:11.0307, dec: 56.3825, mag: 2.37 },
+  { n:'Phecda',    ra:11.8971, dec: 53.6947, mag: 2.44 },
+  { n:'Megrez',    ra:12.2571, dec: 57.0325, mag: 3.31 },
+];
+const DIPPER_PATH = ['Alkaid','Mizar','Alioth','Megrez','Phecda','Merak','Dubhe','Megrez'];
+const PLANET_NAMES = ['Mercury','Venus','Mars','Jupiter','Saturn'];
+const PLANET_COLORS = { Mercury:'#cfc9c2', Venus:'#fdf3c8', Mars:'#e08a63', Jupiter:'#e8d3ad', Saturn:'#e9dfb8' };
+
+let observer = null;
+const sky = { ready:false, sunAlt:12, sunAz:180, moonAlt:-20, moonAz:0, moonK:0.5, moonPhase:0, planets:[], stars:[] };
+
+/* ---------- time warp — the astronomy engine can be handed ANY Date, so the
+   sim clock is decoupled from the wall clock. "Live" keeps it pinned to
+   real now(); the warp presets instead race it forward by simulated
+   hours/days/weeks per real second, so the sun/moon/star positions visibly
+   sweep across the sky. ---------- */
+const WARP_PRESETS = [
+  { key:'live', label:'🕐 Live',     ratePerSec:0,      trailMs:0 },
+  { key:'hour', label:'⏩ 1 hr/s',   ratePerSec:3600,    trailMs:0 },
+  { key:'day',  label:'⏩ 1 day/s',  ratePerSec:86400,   trailMs:24*3600*1000 },      // rolling last sim-day
+  { key:'week', label:'⏩ 1 wk/s',   ratePerSec:604800,  trailMs:7*24*3600*1000 },    // rolling last sim-week
+];
+let warpIdx = 0;
+let simDate = new Date();
+function trailWindowMs(){ return WARP_PRESETS[warpIdx].trailMs; }
+
+/* ---------- trails — a rolling history of {az,alt,t} per body, so the day/
+   and week/ warps can draw the actual swept arc (where it's BEEN) instead of
+   a single dot that just teleports frame to frame. Window length is in SIM
+   time, which conveniently caps how much REAL time of samples that is: at
+   1 day/s a 24-sim-hour window is only ~1 real second of frames; at 1 wk/s a
+   7-sim-day window is only ~7 real seconds — so the arrays stay tiny. ---------- */
+const trails = {};
+function recordTrail(name, az, alt, t){
+  const win = trailWindowMs();
+  if (win <= 0){ trails[name] = [{az, alt, t}]; return; }
+  const arr = trails[name] || (trails[name] = []);
+  arr.push({az, alt, t});
+  const cutoff = t - win;
+  while (arr.length && arr[0].t < cutoff) arr.shift();
+}
+
+function setWarp(i){
+  warpIdx = ((i % WARP_PRESETS.length) + WARP_PRESETS.length) % WARP_PRESETS.length;
+  if (WARP_PRESETS[warpIdx].key === 'live') simDate = new Date();
+  for (const k in trails) delete trails[k]; // fresh slate — don't mix trail scales across modes
+  [...warpBar.children].forEach((el, idx) => el.classList.toggle('active', idx === warpIdx));
+  skyAccum = 0; computeSky(); // snap immediately on a mode change, don't wait for the next tick
+}
+warpBar.addEventListener('click', (e)=>{
+  const el = e.target.closest('.warpBtn');
+  if (el) setWarp(+el.dataset.i);
+});
+
+function tickSim(dt){
+  const preset = WARP_PRESETS[warpIdx];
+  simDate = preset.key === 'live' ? new Date() : new Date(simDate.getTime() + preset.ratePerSec * 1000 * dt);
+}
+
+let skyAccum = 0, chipAccum = 0; // ms since the sky/HUD were last recomputed — driven from the main loop below
+
+function computeSky(){
+  if (!window.Astronomy) return; // library still loading (or offline) — scene falls back to a plain sunny default
+  try{
+    if (!observer) observer = new Astronomy.Observer(LOCATION.lat, LOCATION.lon, LOCATION.elevation);
+    const date = simDate;
+    const t = date.getTime();
+
+    function altaz(body){
+      const eq = Astronomy.Equator(body, date, observer, true, true);
+      const hz = Astronomy.Horizon(date, observer, eq.ra, eq.dec, 'normal');
+      return { alt: hz.altitude, az: hz.azimuth };
+    }
+    function altazFixed(ra, dec){
+      const hz = Astronomy.Horizon(date, observer, ra, dec, 'normal');
+      return { alt: hz.altitude, az: hz.azimuth };
+    }
+
+    const sunHz = altaz(Astronomy.Body.Sun);
+    sky.sunAlt = sunHz.alt; sky.sunAz = sunHz.az;
+    recordTrail('Sun', sunHz.az, sunHz.alt, t);
+
+    const moonHz = altaz(Astronomy.Body.Moon);
+    sky.moonAlt = moonHz.alt; sky.moonAz = moonHz.az;
+    sky.moonK = Astronomy.Illumination(Astronomy.Body.Moon, date).phase_fraction;
+    sky.moonPhase = Astronomy.MoonPhase(date);
+    recordTrail('Moon', moonHz.az, moonHz.alt, t);
+
+    sky.planets = PLANET_NAMES.map(name => {
+      const body = Astronomy.Body[name];
+      const hz = altaz(body);
+      let mag = 5;
+      try{ mag = Astronomy.Illumination(body, date).mag; }catch(e){}
+      recordTrail(name, hz.az, hz.alt, t);
+      return { name, alt:hz.alt, az:hz.az, mag };
+    });
+
+    sky.stars = STARS.map(s => {
+      const hz = altazFixed(s.ra, s.dec);
+      recordTrail(s.n, hz.az, hz.alt, t);
+      return { name:s.n, alt:hz.alt, az:hz.az, mag:s.mag };
+    });
+
+    sky.ready = true;
+  }catch(e){ /* keep last-good sky data */ }
+  updateSkyChip();
+}
+setWarp(0); // Live by default; also runs the first computeSky() and marks the active button
+
+/* ---------- HUD chips: sim clock + weather, and the heading compass ---------- */
+const COMPASS_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+function headingLabel(h){ return COMPASS_DIRS[Math.round((((h%360)+360)%360)/22.5) % 16]; }
+
+function updateSkyChip(){
+  const isLive = WARP_PRESETS[warpIdx].key === 'live';
+  const dateStr = simDate.toLocaleDateString('en-US', { timeZone: LOCATION.tz, month:'short', day:'numeric', year:'numeric' });
+  const timeStr = simDate.toLocaleTimeString('en-US', { timeZone: LOCATION.tz, hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+  let txt = `📅 ${dateStr} · 🕐 ${timeStr}`;
+  if (!isLive) txt += ` · ${WARP_PRESETS[warpIdx].label}`;
+  if (weather.ready) txt += ` · ${weather.icon} ${Math.round(weather.tempF)}°F ${weather.desc}`;
+  skyChip.textContent = txt;
+}
+updateSkyChip();
+
+function updateCompass(){
+  const disp = ((heading % 360) + 360) % 360; // normalized 0-360, for display only
+  compassNeedle.style.transform = `rotate(${heading}deg)`;
+  compassReadout.textContent = `${Math.round(disp)}° ${headingLabel(disp)}`;
+}
+
+/* ---------- project real alt/az onto the screen, for a viewer facing `heading` ----------
+   Azimuth 0=N, 90=E, 180=S, 270=W (compass convention). Turning right increases
+   heading (clockwise), which slides everything left across the screen — same
+   as turning your head right sweeps the world leftward across your vision.
+   Vertical spans horizon (0°, at the ground line) up through zenith (90°,
+   straight up, at the very top of the screen). */
+function project(az, alt, groundY){
+  let d = ((az - heading) % 360 + 360) % 360;
+  if (d > 180) d -= 360;                 // -180..180, 0 = straight ahead
+  if (Math.abs(d) > FOV/2) return null;
+  const x = W/2 + (d / (FOV/2)) * (W/2);
+  const a = clamp(alt, -6, 90);
+  const y = groundY * (1 - a/90);
+  return { x, y };
+}
+
+/* ---------- same mapping, but for trails only: no ±FOV/2 cutoff. A trail is a
+   record of where a body's BEEN, not what's in view right now, so it must not
+   get arbitrarily chopped in half by wherever she happens to be facing at
+   render time — every body should draw its complete swept arc/loop, not just
+   whichever fraction currently falls in front of her. (Sun/moon/planets and
+   even circumpolar stars sweep the full 0-360° of azimuth, so without this
+   they'd render as inconsistent fragments rather than matching full shapes.) */
+function projectFull(az, alt, groundY){
+  let d = ((az - heading) % 360 + 360) % 360;
+  if (d > 180) d -= 360;
+  const x = W/2 + (d / (FOV/2)) * (W/2);
+  const a = clamp(alt, -6, 90);
+  const y = groundY * (1 - a/90);
+  return { x, y };
+}
+
+/* ---------- sky color keyframes, driven by the sun's real altitude ---------- */
+const SKY_KEYFRAMES = [
+  { alt:-90, zen:[5,8,20],    hor:[10,12,26]   },
+  { alt:-18, zen:[8,13,32],   hor:[18,20,42]   },
+  { alt:-12, zen:[16,23,50],  hor:[42,36,62]   },
+  { alt:-6,  zen:[36,52,82],  hor:[130,84,92]  },
+  { alt:-1,  zen:[72,112,152],hor:[252,146,112]},
+  { alt: 4,  zen:[96,166,212],hor:[255,192,142]},
+  { alt:15,  zen:[110,195,236],hor:[235,226,206]},
+  { alt:90,  zen:[110,195,236],hor:[210,231,240]},
+];
+function colorAtAlt(alt, key){
+  if (alt <= SKY_KEYFRAMES[0].alt) return SKY_KEYFRAMES[0][key];
+  for (let i=0; i<SKY_KEYFRAMES.length-1; i++){
+    const a = SKY_KEYFRAMES[i], b = SKY_KEYFRAMES[i+1];
+    if (alt >= a.alt && alt <= b.alt) return lerpColor(a[key], b[key], (alt-a.alt)/(b.alt-a.alt));
+  }
+  return SKY_KEYFRAMES[SKY_KEYFRAMES.length-1][key];
+}
+
 /* ---------- world state ---------- */
-let scroll = 0;         // total distance travelled (px, world space)
-let speed = 130;        // px/sec at "normal" pace
+let scroll = 0;         // total distance walked forward (px, world space)
+let weatherT = 0;       // separate accumulator for rain/snow fall animation
+const speed = 130;      // px/sec walking pace (constant — arrows now steer, not throttle)
 let paused = false;
-const SPEEDS = [ {mul:0.5, label:'slow'}, {mul:1, label:'normal'}, {mul:1.8, label:'fast'} ];
-let speedIdx = 1;
+
+// heading — which way she's facing. Hold ← / → to spin it continuously; the
+// sky projection and the ground/hills/trees parallax both key off it, so the
+// whole world visibly turns around her, same as turning your own head.
+// Left unbounded (never wrapped mod 360) — same as `scroll` — so headingPan
+// stays continuous; wrapping it here would make it jump every time she
+// crosses due north, since headingPan is a direct linear function of it.
+let heading = 0;               // degrees, 0 = north, clockwise-positive, unbounded
+const TURN_RATE = 70;          // degrees/sec while a turn key is held
+const keysDown = new Set();
+function updateHeading(dt){
+  if (keysDown.has('ArrowRight')) heading += TURN_RATE * dt;
+  if (keysDown.has('ArrowLeft'))  heading -= TURN_RATE * dt;
+}
+
+// headingPan is how far turning has swept the view, in the same px-per-degree
+// scale the sky projection uses (W/FOV). Rotation has no parallax — near and
+// far objects sweep across your vision at the same angular rate — so every
+// layer gets this term at full strength, unlike forward walking (scroll)
+// which each layer only gets a fraction of, for depth parallax.
+let headingPan = 0;
 
 let frame = 0, frameTime = 0;
 const FPS = 9;
 let stepBob = 0;
 
+// jump — a quick hop, triggered by the space bar
+const JUMP_POWER = 300, GRAVITY = 950;
+let jumpY = 0, jumpVel = 0, jumping = false;
+function doJump(){
+  if (jumping || paused) return;
+  jumping = true;
+  jumpVel = -JUMP_POWER;
+}
+
 let last = performance.now();
 function loop(now){
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+
+  tickSim(dt); // the sim clock advances even while the scene is paused
+  const ms = dt * 1000;
+  skyAccum += ms; chipAccum += ms;
+  const skyInterval = WARP_PRESETS[warpIdx].key === 'live' ? 15000 : 0; // every frame while warping — max flash speed + smooth trails
+  if (skyAccum >= skyInterval){ skyAccum = 0; computeSky(); }
+  if (chipAccum >= 150){ chipAccum = 0; updateSkyChip(); }
+
+  updateHeading(dt);   // turning works even while paused — you can stand still and look around
+  headingPan = heading * (W / FOV);
+  updateCompass();
+
   update(dt);
   draw();
   requestAnimationFrame(loop);
@@ -101,20 +464,26 @@ function loop(now){
 
 function update(dt){
   if (paused) return;
-  const mul = SPEEDS[speedIdx].mul;
-  const v = speed * mul;
-  scroll += v * dt;
-  stepBob += v * dt;
+  scroll += speed * dt;
+  stepBob += speed * dt;
+  weatherT += dt * 300;
 
-  frameTime += dt * mul;
+  frameTime += dt;
   if (frameTime >= 1/FPS){ frameTime = 0; frame = (frame + 1) % WALK.cols; }
+
+  if (jumping){
+    jumpY += jumpVel * dt;
+    jumpVel += GRAVITY * dt;
+    if (jumpY >= 0){ jumpY = 0; jumpVel = 0; jumping = false; }
+  }
 }
 
 /* ---------- little parallax scenery, generated procedurally so no extra art
-   is needed — tiled shapes repeated with a fixed period and wrapped by the
-   scroll offset (each layer scrolls at its own fraction of world speed). ---------- */
+   is needed — tiled shapes repeated with a fixed period. Forward walking
+   (scroll) is scaled by depth `factor` for parallax; turning (headingPan) is
+   always full-strength, so every layer spins together at the same fast rate. */
 function tiled(period, factor, count, drawFn){
-  const off = (scroll * factor) % period;
+  const off = (scroll * factor + headingPan) % period;
   const start = -off - period;
   for (let i = -1; i * period + start < W + period; i++){
     drawFn(start + i * period, period);
@@ -132,24 +501,148 @@ function draw(){
   drawGround(groundY);
   drawFigure(groundY);
   drawGrassFringe(groundY);
+  drawGroundTint(groundY);
+  drawWeatherFX(groundY);
 }
 
 function drawSky(groundY){
+  const alt = sky.sunAlt;
+  const zen = colorAtAlt(alt, 'zen'), hor = colorAtAlt(alt, 'hor');
+  const mid = lerpColor(zen, hor, 0.55);
   const g = ctx.createLinearGradient(0, 0, 0, groundY);
-  g.addColorStop(0, '#6ec3ec');
-  g.addColorStop(0.65, '#bfe6f2');
-  g.addColorStop(1, '#fdeede');
+  g.addColorStop(0, rgbStr(zen));
+  g.addColorStop(0.65, rgbStr(mid));
+  g.addColorStop(1, rgbStr(hor));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, groundY);
 
-  // sun, fixed — she's walking under an endless afternoon
+  drawStars(groundY);
+  drawPlanets(groundY);
+  drawMoon(groundY);
+  drawSun(groundY);
+}
+
+/* draws the swept arc of recent positions for a body — fades with age, breaks
+   the line across FOV-edge wraps and horizon dips instead of drawing a false
+   chord straight through them. Independent of day/night gating, since the
+   whole point is to keep the week's/day's sweep visible through the flashing. */
+function drawTrail(name, groundY, win, color, lineWidth, baseAlpha){
+  const arr = trails[name];
+  if (!arr || arr.length < 2) return;
+  const newestT = arr[arr.length-1].t;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  let prevP = null;
+  for (let i = 0; i < arr.length; i++){
+    const s = arr[i];
+    const p = projectFull(s.az, s.alt, groundY);
+    if (!prevP || Math.abs(prevP.x - p.x) > W*0.5){ prevP = p; continue; }
+    const age = clamp((newestT - s.t) / win, 0, 1);
+    ctx.globalAlpha = (1 - age) * baseAlpha;
+    ctx.beginPath(); ctx.moveTo(prevP.x, prevP.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    prevP = p;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawSun(groundY){
+  const win = trailWindowMs();
+  if (win > 0) drawTrail('Sun', groundY, win, 'rgba(255,205,120,1)', 3, 0.85);
+
+  const p = project(sky.sunAz, sky.sunAlt, groundY);
+  if (!p) return;
+  const warmth = clamp(1 - sky.sunAlt/12, 0, 1);
+  const core = lerpColor([255,246,214], [255,200,150], warmth);
   ctx.save();
-  ctx.globalAlpha = .9;
-  ctx.fillStyle = '#fff6d8';
-  ctx.beginPath(); ctx.arc(W*0.84, H*0.18, 46, 0, Math.PI*2); ctx.fill();
-  ctx.globalAlpha = .35;
-  ctx.beginPath(); ctx.arc(W*0.84, H*0.18, 70, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = rgbStr(core);
+  ctx.beginPath(); ctx.arc(p.x, p.y, 46, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 0.32;
+  ctx.beginPath(); ctx.arc(p.x, p.y, 72, 0, Math.PI*2); ctx.fill();
   ctx.restore();
+}
+
+function drawMoon(groundY){
+  const win = trailWindowMs();
+  if (win > 0) drawTrail('Moon', groundY, win, 'rgba(210,218,235,1)', 2, 0.75);
+
+  const p = project(sky.moonAz, sky.moonAlt, groundY);
+  if (!p) return;
+  const R = 24;
+  const k = clamp(sky.moonK, 0, 1);
+  const waxing = sky.moonPhase < 180;
+  const nightness = clamp((-sky.sunAlt + 2)/12, 0, 1);
+  ctx.save();
+  ctx.globalAlpha = 0.32 + 0.68 * nightness;
+  ctx.fillStyle = '#aeb8cc';
+  ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI*2); ctx.clip();
+  const offset = R * (1 - 2*k) * (waxing ? -1 : 1);
+  ctx.fillStyle = '#fbf7ee';
+  ctx.beginPath(); ctx.arc(p.x + offset, p.y, R, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPlanets(groundY){
+  const win = trailWindowMs();
+  if (win > 0) PLANET_NAMES.forEach(name => drawTrail(name, groundY, win, PLANET_COLORS[name] || '#eee', 1.5, 0.6));
+
+  const nightness = clamp((-sky.sunAlt - 1)/10, 0, 1);
+  if (nightness <= 0.03 || !sky.planets.length) return;
+  const cloudFactor = clamp(1 - weather.cloud/130, 0.15, 1);
+  sky.planets.forEach(pl => {
+    if (pl.mag > 3) return; // only the "prominent" (naked-eye-bright) placements
+    const p = project(pl.az, pl.alt, groundY);
+    if (!p) return;
+    const size = Math.max(1.6, 4.4 - pl.mag);
+    ctx.globalAlpha = nightness * cloudFactor;
+    ctx.fillStyle = PLANET_COLORS[pl.name] || '#eee';
+    ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.88)';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pl.name, p.x, p.y - size - 6);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function drawStars(groundY){
+  const win = trailWindowMs();
+  if (win > 0) STARS.forEach(s => drawTrail(s.n, groundY, win, 'rgba(210,220,255,1)', 1, 0.4));
+
+  const nightness = clamp((-sky.sunAlt - 4)/10, 0, 1);
+  const cloudFactor = clamp(1 - weather.cloud/120, 0.1, 1);
+  const alphaMul = nightness * cloudFactor;
+  if (alphaMul <= 0.02 || !sky.stars.length) return;
+
+  const visible = sky.stars.map(s => ({ ...s, p: project(s.az, s.alt, groundY) })).filter(s => s.p);
+  const pts = {}; visible.forEach(s => pts[s.name] = s.p);
+
+  visible.forEach(s => {
+    const size = Math.max(0.8, 3.2 - s.mag*0.9);
+    ctx.globalAlpha = alphaMul * clamp(1 - (s.mag+1.5)/6, 0.15, 1);
+    ctx.fillStyle = s.name === 'Polaris' ? '#fff6d2' : '#eef3ff';
+    ctx.beginPath(); ctx.arc(s.p.x, s.p.y, size, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = alphaMul * 0.9;
+    ctx.fillStyle = s.name === 'Polaris' ? '#fff6d2' : 'rgba(255,255,255,.85)';
+    ctx.font = '10.5px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.name === 'Polaris' ? 'Polaris (true north)' : s.name, s.p.x, s.p.y - size - 6);
+  });
+
+  // the Big Dipper — circumpolar from here, so it's the reliable "facing north" landmark
+  ctx.globalAlpha = alphaMul * 0.5;
+  ctx.strokeStyle = 'rgba(220,230,255,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  let started = false;
+  DIPPER_PATH.forEach(name => {
+    const p = pts[name];
+    if (!p){ started = false; return; }
+    if (!started){ ctx.moveTo(p.x, p.y); started = true; } else ctx.lineTo(p.x, p.y);
+  });
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 }
 
 function drawHills(groundY){
@@ -176,16 +669,16 @@ function drawHills(groundY){
 }
 
 function drawClouds(){
-  ctx.fillStyle = 'rgba(255,255,255,.85)';
-  tiled(430, 0.05, 0, (x)=>{
-    const y = H*0.14;
-    puff(x, y, 30); puff(x+26, y-10, 22); puff(x+50, y, 26); puff(x+22, y+8, 24);
-  });
-  tiled(610, 0.03, 0, (x)=>{
-    const y = H*0.26;
-    puff(x, y, 20); puff(x+18, y-6, 16); puff(x+34, y, 18);
-  });
+  const cover = weather.ready ? weather.cloud : 25;
+  const alpha = clamp(0.35 + cover/140, 0.25, 0.95);
+  const nightness = clamp((-sky.sunAlt - 2)/16, 0, 1);
+  const color = lerpColor([255,255,255], [45,50,80], nightness);
+  ctx.fillStyle = rgbStr(color, alpha);
+  const density = cover > 66 ? 3 : cover > 33 ? 2 : cover > 10 ? 1 : 0;
   function puff(cx, cy, r){ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); }
+  if (density >= 1) tiled(430, 0.05, 0, (x)=>{ const y=H*0.14; puff(x,y,30); puff(x+26,y-10,22); puff(x+50,y,26); puff(x+22,y+8,24); });
+  if (density >= 2) tiled(300, 0.07, 0, (x)=>{ const y=H*0.22; puff(x,y,22); puff(x+20,y-6,18); puff(x+38,y,20); });
+  if (density >= 3) tiled(200, 0.09, 0, (x)=>{ const y=H*0.30; puff(x,y,20); puff(x+16,y-4,16); puff(x+30,y,18); });
 }
 
 function drawTrees(groundY){
@@ -207,29 +700,25 @@ function drawTrees(groundY){
   });
 }
 
+/* an open field, not a road — mottled grass patches for texture, plus
+   scattered wildflowers, all tiled so they pan/scroll with her */
 function drawGround(groundY){
   ctx.fillStyle = '#8fbf6a';
   ctx.fillRect(0, groundY, W, H - groundY);
 
-  // a worn dirt path down the middle she's forever trotting along
-  const pathTop = groundY + (H-groundY)*0.18;
-  const pathH = (H-groundY)*0.5;
-  ctx.fillStyle = '#d8b988';
-  ctx.fillRect(0, pathTop, W, pathH);
-  ctx.fillStyle = 'rgba(0,0,0,.06)';
-  ctx.fillRect(0, pathTop, W, 4);
-  ctx.fillRect(0, pathTop+pathH-4, W, 4);
+  ctx.fillStyle = 'rgba(122,180,90,.5)';
+  tiled(150, 1, 0, (x)=>{ ctx.beginPath(); ctx.ellipse(x+40, groundY+50, 50, 20, 0, 0, Math.PI*2); ctx.fill(); });
+  ctx.fillStyle = 'rgba(160,205,120,.35)';
+  tiled(97, 1, 0, (x)=>{ ctx.beginPath(); ctx.ellipse(x+18, groundY+95, 38, 15, 0, 0, Math.PI*2); ctx.fill(); });
+  ctx.fillStyle = 'rgba(70,120,55,.3)';
+  tiled(121, 1, 0, (x)=>{ ctx.beginPath(); ctx.ellipse(x+55, groundY+140, 42, 16, 0, 0, Math.PI*2); ctx.fill(); });
 
-  // dashed centre line scrolling at full speed — the clearest motion cue
-  ctx.fillStyle = 'rgba(255,255,255,.55)';
-  tiled(70, 1, 0, (x)=>{
-    ctx.fillRect(x, pathTop + pathH/2 - 3, 34, 6);
+  const FLOWERS = ['#fdf3c8', '#f2a6b3', '#ffffff'];
+  tiled(44, 1, 0, (x)=>{
+    const fy = groundY + 24 + (Math.abs(Math.round(x)) % 5) * 32;
+    ctx.fillStyle = FLOWERS[Math.abs(Math.round(x/44)) % FLOWERS.length];
+    ctx.beginPath(); ctx.arc(x+14, fy, 3, 0, Math.PI*2); ctx.fill();
   });
-
-  // little pebbles for texture
-  ctx.fillStyle = 'rgba(120,90,60,.35)';
-  tiled(53, 1, 0, (x)=>{ ctx.beginPath(); ctx.arc(x+10, pathTop + pathH*0.28, 3, 0, Math.PI*2); ctx.fill(); });
-  tiled(61, 1, 0, (x)=>{ ctx.beginPath(); ctx.arc(x+30, pathTop + pathH*0.74, 2.4, 0, Math.PI*2); ctx.fill(); });
 }
 
 function drawGrassFringe(groundY){
@@ -237,10 +726,88 @@ function drawGrassFringe(groundY){
   tiled(26, 1.15, 0, (x)=>{
     ctx.beginPath();
     ctx.moveTo(x, groundY);
-    ctx.lineTo(x+6, groundY - 9 - Math.sin((x+scroll)*0.05)*2);
+    ctx.lineTo(x+6, groundY - 9 - Math.sin((x+scroll+headingPan)*0.05)*2);
     ctx.lineTo(x+12, groundY);
     ctx.closePath(); ctx.fill();
   });
+}
+
+/* darkens the ground/hills/trees toward night, and warms them at golden hour —
+   keeps the terrain in sync with the real sun altitude driving the sky above.
+   Faded in via a gradient (not a flat rect) so there's no hard seam where the
+   tint zone starts partway up into the hill peaks. */
+function drawGroundTint(groundY){
+  const alt = sky.sunAlt;
+  const top = groundY - H*0.22;
+  const dark = clamp((-alt - 2)/14, 0, 0.72);
+  const warm = clamp(1 - Math.abs(alt-3)/9, 0, 1) * 0.26;
+  const frac = clamp((groundY - top) / (H - top), 0, 1);
+
+  if (dark > 0.02){
+    const g = ctx.createLinearGradient(0, top, 0, H);
+    g.addColorStop(0, 'rgba(4,8,22,0)');
+    g.addColorStop(frac, `rgba(4,8,22,${dark})`);
+    g.addColorStop(1, `rgba(4,8,22,${dark})`);
+    ctx.fillStyle = g; ctx.fillRect(0, top, W, H-top);
+  }
+  if (warm > 0.02){
+    const g = ctx.createLinearGradient(0, top, 0, H);
+    g.addColorStop(0, 'rgba(255,150,90,0)');
+    g.addColorStop(frac, `rgba(255,150,90,${warm})`);
+    g.addColorStop(1, `rgba(255,150,90,${warm})`);
+    ctx.fillStyle = g; ctx.fillRect(0, top, W, H-top);
+  }
+}
+
+/* ---------- weather effects: rain, snow, fog, the odd flash of lightning ---------- */
+let flashAlpha = 0, nextFlashAt = 0;
+function drawWeatherFX(groundY){
+  if (!weather.ready) return;
+  const code = weather.code;
+
+  if (code === 45 || code === 48){ // fog
+    const g = ctx.createLinearGradient(0, groundY-150, 0, groundY+30);
+    g.addColorStop(0, 'rgba(225,228,233,0)');
+    g.addColorStop(1, 'rgba(225,228,233,0.55)');
+    ctx.fillStyle = g; ctx.fillRect(0, groundY-150, W, 180);
+    return;
+  }
+
+  const isRain = (code>=51&&code<=67) || (code>=80&&code<=82) || code>=95;
+  const isSnow = (code>=71&&code<=77) || code===85 || code===86;
+
+  if (isRain){
+    ctx.strokeStyle = 'rgba(190,210,235,0.55)';
+    ctx.lineWidth = 1.3;
+    const sx = 22, sy = 30;
+    const offY = weatherT % sy, offX = (scroll*0.5 + headingPan) % sx;
+    for (let y=-sy; y<groundY+20; y+=sy){
+      for (let x=-sx; x<W+sx; x+=sx){
+        const dx = x - offX, dy = y + offY;
+        ctx.beginPath(); ctx.moveTo(dx, dy); ctx.lineTo(dx-4, dy+15); ctx.stroke();
+      }
+    }
+  } else if (isSnow){
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    const sx = 26, sy = 34;
+    const offY = weatherT % sy, offX = (scroll*0.25 + headingPan) % sx;
+    for (let y=-sy; y<groundY+20; y+=sy){
+      for (let x=-sx; x<W+sx; x+=sx){
+        const dx = x - offX + Math.sin((y+weatherT)*0.02)*6, dy = y + offY;
+        ctx.beginPath(); ctx.arc(dx, dy, 2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+
+  if (code >= 95){
+    const now = performance.now();
+    if (!paused && now > nextFlashAt){ flashAlpha = 0.8; nextFlashAt = now + 3000 + Math.random()*9000; }
+    if (flashAlpha > 0.01){
+      ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+      ctx.fillRect(0, 0, W, groundY);
+      flashAlpha *= 0.82;
+    }
+  }
 }
 
 /* ---------- Krystal, fixed in place, forever mid-stride ---------- */
@@ -253,11 +820,12 @@ function drawFigure(groundY){
   const foot = footInset * dispH;
   const bob = paused ? 0 : Math.abs(Math.sin(stepBob * 0.14)) * 4;
 
-  const feetX = fx, feetY = groundY + foot;
+  const feetX = fx, feetY = groundY + foot + jumpY;
 
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,.18)';
-  ctx.beginPath(); ctx.ellipse(feetX, groundY - 2, dispW*0.30, dispH*0.045, 0, 0, Math.PI*2); ctx.fill();
+  // shadow — stays on the ground, shrinking as she gets further off it
+  const shadowScale = 1 - clamp(-jumpY/70, 0, 0.45);
+  ctx.fillStyle = `rgba(0,0,0,${0.18 * shadowScale})`;
+  ctx.beginPath(); ctx.ellipse(feetX, groundY - 2, dispW*0.30*shadowScale, dispH*0.045*shadowScale, 0, 0, Math.PI*2); ctx.fill();
 
   if (WALK.ready){
     const frameX = frame * WALK.fw;
@@ -275,23 +843,24 @@ function drawFigure(groundY){
 }
 
 /* ---------- controls ---------- */
-function setSpeed(i){
-  speedIdx = Math.max(0, Math.min(SPEEDS.length-1, i));
-  speedChip.textContent = (paused ? '⏸ ' : '▶ ') + SPEEDS[speedIdx].label;
-}
 function togglePause(){
   paused = !paused;
-  setSpeed(speedIdx);
+  playChip.textContent = paused ? '⏸' : '▶';
   hint.classList.add('hide');
 }
 cv.addEventListener('pointerdown', togglePause);
+
+const TURN_KEYS = ['ArrowLeft','ArrowRight'];
 window.addEventListener('keydown', (e)=>{
-  if (e.code === 'Space'){ e.preventDefault(); togglePause(); }
-  else if (e.code === 'ArrowRight'){ setSpeed(speedIdx+1); }
-  else if (e.code === 'ArrowLeft'){ setSpeed(speedIdx-1); }
+  if (e.code === 'Space'){ e.preventDefault(); doJump(); }
+  else if (TURN_KEYS.includes(e.code)){ e.preventDefault(); keysDown.add(e.code); }
+  else if (e.code >= 'Digit1' && e.code <= 'Digit4'){ setWarp(+e.code.slice(-1) - 1); }
+});
+window.addEventListener('keyup', (e)=>{
+  if (TURN_KEYS.includes(e.code)) keysDown.delete(e.code);
 });
 
-setSpeed(speedIdx);
+playChip.textContent = '▶';
 setTimeout(()=> hint.classList.add('hide'), 4500);
 requestAnimationFrame((t)=>{ last = t; requestAnimationFrame(loop); });
 </script>
