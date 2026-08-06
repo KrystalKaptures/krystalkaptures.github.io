@@ -383,49 +383,736 @@ function drawSky(sky){
   }
 }
 
-/* ---------- parallax background ---------- */
+/* ---------- parallax helpers ---------- */
 function tiled(period, factor, drawFn){
-  const off = (scroll*factor) % period;
+  const off = ((scroll*factor) % period + period) % period;
   for (let x = -off - period; x < W + period; x += period) drawFn(x, period);
 }
 
-function drawHills(){
-  ctx.fillStyle = 'rgba(30,60,40,0.55)';
-  tiled(260, 0.35, (x,p) => {
-    ctx.beginPath();
-    ctx.ellipse(x+p*0.5, groundY+18, p*0.62, 46, 0, Math.PI, 0);
-    ctx.fill();
-  });
+/* ---------- cloud system (independent of character scroll) ---------- */
+let cloudTime = 0;
+const CLOUD_WIND = 18;  // base px/sec drift
+
+function seededRand(seed){
+  let s = seed;
+  return function(){ s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
 }
+
+const clouds = [];
+function initClouds(){
+  clouds.length = 0;
+  const rng = seededRand(42);
+  for (let i = 0; i < 14; i++){
+    const layer = i < 5 ? 0 : (i < 10 ? 1 : 2); // 0=high/slow, 1=mid, 2=low/fast
+    const baseSpeed = [0.4, 0.7, 1.0][layer];
+    const baseY = [0.08, 0.18, 0.30][layer];
+    const baseScale = [0.6, 0.85, 1.1][layer];
+    const baseAlpha = [0.35, 0.55, 0.7][layer];
+    const blobCount = 3 + Math.floor(rng() * 4);
+    const blobs = [];
+    for (let b = 0; b < blobCount; b++){
+      blobs.push({
+        ox: (rng() - 0.3) * 70 * baseScale,
+        oy: (rng() - 0.5) * 18 * baseScale,
+        rx: (14 + rng() * 28) * baseScale,
+        ry: (8 + rng() * 12) * baseScale,
+      });
+    }
+    clouds.push({
+      x: rng() * 2400,
+      y: baseY + (rng() - 0.5) * 0.06,
+      speed: CLOUD_WIND * baseSpeed * (0.7 + rng() * 0.6),
+      alpha: baseAlpha * (0.7 + rng() * 0.6),
+      blobs: blobs,
+      wrap: 2400,
+    });
+  }
+}
+initClouds();
 
 function drawClouds(){
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  tiled(300, 0.15, (x,p) => {
-    const y = groundY*0.22 + Math.sin(x*0.01)*8;
+  for (const c of clouds){
+    const screenY = c.y * groundY;
+    const screenX = ((c.x - cloudTime * c.speed) % c.wrap + c.wrap) % c.wrap;
+    // draw at screenX and screenX - wrap so clouds tile seamlessly
+    for (let rep = screenX - c.wrap; rep < W + 120; rep += c.wrap){
+      ctx.fillStyle = `rgba(255,255,255,${c.alpha})`;
+      ctx.beginPath();
+      for (const b of c.blobs){
+        ctx.moveTo(rep + b.ox + b.rx, screenY + b.oy);
+        ctx.ellipse(rep + b.ox, screenY + b.oy, b.rx, b.ry, 0, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+  }
+}
+
+/* ---------- terrain height profile generator ---------- */
+/* Builds a profile from a chain of wave segments. Each segment is a
+   cosine-interpolated arc between two knot heights. Segments have random
+   widths and random heights, but each segment's end connects seamlessly
+   to the next segment's start. The last knot wraps to the first for tiling. */
+function generateProfile(seed, numKnots, samples, minH, maxH){
+  const rng = seededRand(seed);
+
+  // generate knots with random spacing and random heights
+  const knots = [];
+  let totalW = 0;
+  for (let i = 0; i < numKnots; i++){
+    const w = 0.4 + rng() * 1.6;           // random segment width (weight)
+    const h = minH + rng() * (maxH - minH); // random height
+    knots.push({ w, h });
+    totalW += w;
+  }
+  // normalize widths to sum to 1
+  for (const k of knots) k.w /= totalW;
+  // wrap: last knot height = first knot height so the profile tiles
+  knots[knots.length - 1].h = knots[0].h;
+
+  // build cumulative x positions for knot boundaries
+  const boundaries = [{ x: 0, h: knots[0].h }];
+  let cx = 0;
+  for (let i = 0; i < knots.length; i++){
+    cx += knots[i].w;
+    boundaries.push({ x: cx, h: knots[(i + 1) % knots.length].h });
+  }
+
+  // each segment gets a random phase offset within the cosine cycle
+  // so some arcs are asymmetric (steeper on one side)
+  const phaseOffsets = knots.map(() => (rng() - 0.5) * 0.6);
+
+  // sample the profile at even intervals
+  const heights = [];
+  let ki = 0;
+  for (let i = 0; i <= samples; i++){
+    const t = i / samples;
+    while (ki < boundaries.length - 2 && t > boundaries[ki + 1].x) ki++;
+    const b0 = boundaries[ki];
+    const b1 = boundaries[ki + 1];
+    const segW = b1.x - b0.x;
+    const localT = segW > 0 ? (t - b0.x) / segW : 0;
+    // cosine interpolation with phase offset for asymmetry
+    const phase = phaseOffsets[ki % phaseOffsets.length];
+    const skewed = Math.max(0, Math.min(1, localT + phase * localT * (1 - localT)));
+    const cosT = (1 - Math.cos(skewed * Math.PI)) / 2;
+    heights.push(b0.h + (b1.h - b0.h) * cosT);
+  }
+  return heights;
+}
+
+/* Draw one solid terrain layer: curved profile on top, solid fill to groundY */
+function drawTerrainLayer(color, profile, period, factor, baseY, heightScale){
+  ctx.fillStyle = color;
+  const samples = profile.length - 1;
+  const off = ((scroll * factor) % period + period) % period;
+
+  for (let rep = -off - period; rep < W + period; rep += period){
     ctx.beginPath();
-    ctx.ellipse(x+40, y, 34, 14, 0, 0, 7);
-    ctx.ellipse(x+70, y-8, 26, 12, 0, 0, 7);
-    ctx.ellipse(x+16, y-4, 22, 11, 0, 0, 7);
+    ctx.moveTo(rep, groundY + 2);
+    ctx.lineTo(rep, baseY);
+    for (let i = 0; i <= samples; i++){
+      const px = rep + (i / samples) * period;
+      const py = baseY - Math.max(0, profile[i]) * heightScale;
+      if (i === 0) ctx.lineTo(px, py);
+      else {
+        const prevX = rep + ((i - 1) / samples) * period;
+        const prevY = baseY - Math.max(0, profile[i - 1]) * heightScale;
+        const cpx = (prevX + px) / 2;
+        ctx.bezierCurveTo(cpx, prevY, cpx, py, px, py);
+      }
+    }
+    ctx.lineTo(rep + period, baseY);
+    ctx.lineTo(rep + period, groundY + 2);
+    ctx.closePath();
     ctx.fill();
+  }
+}
+
+/* ---------- layer profiles (generated once) ---------- */
+// Mountains: many narrow knots, large height range → jagged
+const mtProfiles = [
+  generateProfile(101, 18, 64, 0.0, 1.0),
+  generateProfile(202, 15, 64, 0.0, 1.0),
+  generateProfile(303, 14, 56, 0.1, 0.9),
+];
+// Hills: fewer wider knots, moderate range → rounder
+const hillProfiles = [
+  generateProfile(404, 10, 48, 0.1, 0.85),
+  generateProfile(505,  9, 48, 0.15, 0.8),
+  generateProfile(556,  8, 40, 0.2, 0.75),
+  generateProfile(606,  7, 40, 0.2, 0.7),
+  generateProfile(657,  6, 36, 0.25, 0.65),
+];
+// Meadow: few wide knots, gentle range
+const meadowProfiles = [
+  generateProfile(707, 5, 32, 0.3, 0.6),
+  generateProfile(758, 4, 28, 0.35, 0.55),
+];
+
+function drawMountainsAndHills(){
+  //        color       profile              period  scroll  baseY-frac  hScale
+  // --- distant mountains: small waves ---
+  drawTerrainLayer('#3a4d6a', mtProfiles[0],   1600, 0.02, groundY * 0.58,  18);
+  drawTerrainLayer('#334a5e', mtProfiles[1],   1300, 0.04, groundY * 0.62,  20);
+  drawTerrainLayer('#2e4050', mtProfiles[2],   1050, 0.07, groundY * 0.66,  22);
+  // --- foothills: growing ---
+  drawTerrainLayer('#243e3a', hillProfiles[0],  850, 0.11, groundY * 0.70,  26);
+  drawTerrainLayer('#1e3c28', hillProfiles[1],  700, 0.16, groundY * 0.74,  30);
+  drawTerrainLayer('#225530', hillProfiles[2],  580, 0.22, groundY * 0.78,  34);
+  // --- near hills: biggest waves ---
+  drawTerrainLayer('#286030', hillProfiles[3],  450, 0.30, groundY * 0.82,  40);
+  drawTerrainLayer('#2d6338', hillProfiles[4],  360, 0.40, groundY * 0.86,  44);
+  // --- meadow: large gentle rolls ---
+  drawTerrainLayer('#2e6a38', meadowProfiles[0],280, 0.52, groundY * 0.90,  36);
+  drawTerrainLayer('#2f6b3a', meadowProfiles[1],220, 0.65, groundY * 0.95,  24);
+}
+
+/* ---------- background trees (distant fractal silhouettes on the near hill) ---------- */
+const BG_TREE_PERIOD = 2400;
+const bgTrees = [];
+
+function generateBgTree(rng){
+  const trunk = [];
+  const canopyPts = [];
+
+  function branch(sx, sy, ang, len, w, depth){
+    if (depth > 3 || len < 3) return;
+    const ex = sx + Math.cos(ang) * len;
+    let ey = sy + Math.sin(ang) * len;
+    if (ey > -2) ey = -2;
+
+    // mid-segment branch chance
+    const midFork = rng() < 0.4 && depth < 3;
+    if (midFork){
+      const mt = 0.3 + rng() * 0.4;
+      const mx = sx + (ex - sx) * mt;
+      const my = sy + (ey - sy) * mt;
+      trunk.push({ x1: sx, y1: sy, x2: mx, y2: my, w });
+      trunk.push({ x1: mx, y1: my, x2: ex, y2: ey, w: w * 0.85 });
+      let ma = ang + (rng() < 0.5 ? -1 : 1) * (0.4 + rng() * 0.5);
+      if (ma > -0.2) ma = -0.2;
+      branch(mx, my, ma, len * (0.35 + rng() * 0.15), Math.max(0.5, w * 0.5), depth + 1);
+    } else {
+      trunk.push({ x1: sx, y1: sy, x2: ex, y2: ey, w });
+    }
+
+    // sample canopy boundary at branch tips
+    if (depth >= 1){
+      const r = 3 + len * 0.3;
+      for (let a = 0; a < 6; a++){
+        const ba = a * Math.PI / 3;
+        canopyPts.push({ x: ex + Math.cos(ba) * r, y: ey + Math.sin(ba) * r });
+      }
+    }
+    const kids = depth === 0 ? 2 + Math.floor(rng() * 2) : 1 + Math.floor(rng() * 2);
+    for (let i = 0; i < kids; i++){
+      let ca = ang + (rng() - 0.5) * 1.2;
+      if (ca > -0.2) ca = -0.2;
+      branch(ex, ey, ca, len * (0.5 + rng() * 0.2), Math.max(0.5, w * 0.55), depth + 1);
+    }
+  }
+
+  const h = 25 + rng() * 30;
+  const lean = (rng() - 0.5) * 0.2;
+  branch(0, 0, -Math.PI / 2 + lean, h, 3 + rng() * 2, 0);
+
+  // compute hull for canopy
+  let hull = [];
+  if (canopyPts.length >= 3){
+    hull = convexHull(canopyPts);
+  }
+  return { trunk, hull };
+}
+
+function initBgTrees(){
+  bgTrees.length = 0;
+  for (let i = 0; i < 20; i++){
+    const rng = () => Math.random();
+    const x = i * (BG_TREE_PERIOD / 20) + rng() * 60;
+    bgTrees.push({ x, ...generateBgTree(rng) });
+  }
+}
+initBgTrees();
+
+function drawBgTrees(){
+  const factor = 0.40;
+  const baseY = groundY * 0.88;
+  const off = ((scroll * factor) % BG_TREE_PERIOD + BG_TREE_PERIOD) % BG_TREE_PERIOD;
+
+  for (let rep = -off - BG_TREE_PERIOD; rep < W + BG_TREE_PERIOD; rep += BG_TREE_PERIOD){
+    for (const bt of bgTrees){
+      const tx = rep + bt.x;
+      if (tx < -60 || tx > W + 60) continue;
+
+      // trunk segments
+      ctx.fillStyle = '#1e3018';
+      for (const b of bt.trunk){
+        const dx = b.x2 - b.x1, dy = b.y2 - b.y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const px = -dy / len * b.w / 2, py = dx / len * b.w / 2;
+        ctx.beginPath();
+        ctx.moveTo(tx + b.x1 + px, baseY + b.y1 + py);
+        ctx.lineTo(tx + b.x2 + px * 0.6, baseY + b.y2 + py * 0.6);
+        ctx.lineTo(tx + b.x2 - px * 0.6, baseY + b.y2 - py * 0.6);
+        ctx.lineTo(tx + b.x1 - px, baseY + b.y1 - py);
+        ctx.fill();
+      }
+
+      // canopy hull
+      if (bt.hull.length >= 3){
+        ctx.fillStyle = '#1a3a1c';
+        ctx.beginPath();
+        const h = bt.hull;
+        ctx.moveTo(tx + (h[h.length-1].x + h[0].x) / 2, baseY + (h[h.length-1].y + h[0].y) / 2);
+        for (let hi = 0; hi < h.length; hi++){
+          const curr = h[hi], next = h[(hi + 1) % h.length];
+          ctx.quadraticCurveTo(tx + curr.x, baseY + curr.y, tx + (curr.x + next.x) / 2, baseY + (curr.y + next.y) / 2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+}
+
+/* ---------- mid-layer trees (between bg trees and foreground, scaled smaller) ---------- */
+const MID_TREE_PERIOD = 1800;
+const midTrees = [];
+
+function initMidTrees(){
+  midTrees.length = 0;
+  for (let i = 0; i < 12; i++){
+    const rng = () => Math.random();
+    const x = i * (MID_TREE_PERIOD / 12) + rng() * 60;
+    const tree = generateBgTree(rng);
+    // scale everything by 1.5x (bigger than bg but smaller than foreground)
+    const scale = 1.3 + rng() * 0.4;
+    tree.trunk.forEach(b => { b.x1 *= scale; b.y1 *= scale; b.x2 *= scale; b.y2 *= scale; b.w *= scale; });
+    tree.hull = tree.hull.map(p => ({ x: p.x * scale, y: p.y * scale }));
+    midTrees.push({ x, ...tree });
+  }
+}
+initMidTrees();
+
+function drawMidTrees(){
+  const factor = 0.55;
+  const baseY = groundY * 0.93;
+  const off = ((scroll * factor) % MID_TREE_PERIOD + MID_TREE_PERIOD) % MID_TREE_PERIOD;
+
+  for (let rep = -off - MID_TREE_PERIOD; rep < W + MID_TREE_PERIOD; rep += MID_TREE_PERIOD){
+    for (const bt of midTrees){
+      const tx = rep + bt.x;
+      if (tx < -80 || tx > W + 80) continue;
+
+      ctx.fillStyle = '#223a1a';
+      for (const b of bt.trunk){
+        const dx = b.x2 - b.x1, dy = b.y2 - b.y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const px = -dy / len * b.w / 2, py = dx / len * b.w / 2;
+        ctx.beginPath();
+        ctx.moveTo(tx + b.x1 + px, baseY + b.y1 + py);
+        ctx.lineTo(tx + b.x2 + px * 0.6, baseY + b.y2 + py * 0.6);
+        ctx.lineTo(tx + b.x2 - px * 0.6, baseY + b.y2 - py * 0.6);
+        ctx.lineTo(tx + b.x1 - px, baseY + b.y1 - py);
+        ctx.fill();
+      }
+
+      if (bt.hull.length >= 3){
+        ctx.fillStyle = '#1e4520';
+        ctx.beginPath();
+        const h = bt.hull;
+        ctx.moveTo(tx + (h[h.length-1].x + h[0].x) / 2, baseY + (h[h.length-1].y + h[0].y) / 2);
+        for (let hi = 0; hi < h.length; hi++){
+          const curr = h[hi], next = h[(hi + 1) % h.length];
+          ctx.quadraticCurveTo(tx + curr.x, baseY + curr.y, tx + (curr.x + next.x) / 2, baseY + (curr.y + next.y) / 2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+}
+
+/* ---------- fractal tree generation (foreground) ---------- */
+
+const TREE_PERIOD = 4000;
+const TREE_COUNT  = 16;
+
+/* Tree skeleton. `widthBias` (0-1) controls shape: 0 = tall/narrow, 1 = wide/spreading.
+   Wide trees fork low with branches angled far out; narrow trees fork high and upward. */
+function generateTreeBranches(rng, startX, startY, angle, length, width, depth, maxDepth, wood, frondRoots, widthBias){
+  if (depth > maxDepth || length < 4) return;
+
+  let endX = startX + Math.cos(angle) * length;
+  let endY = startY + Math.sin(angle) * length;
+  // clamp: don't grow below ground (y=0 is ground in tree-local coords)
+  if (endY > -4){ endY = -4; endX = startX + (endX - startX) * Math.abs((-4 - startY) / (endY - startY + 0.01)); }
+
+  // mid-segment branches: random chance to fork partway along this segment
+  const midBranchChance = depth === 0 ? 0.6 : 0.35;
+  const midCount = rng() < midBranchChance ? (1 + Math.floor(rng() * 2)) : 0;
+  const midPoints = [];
+  for (let mi = 0; mi < midCount; mi++){
+    const t = 0.25 + rng() * 0.5;  // fork between 25%-75% along segment
+    const mx = startX + (endX - startX) * t;
+    const my = startY + (endY - startY) * t;
+    midPoints.push({ x: mx, y: my, t });
+  }
+
+  // taper: width at start vs end of this segment
+  const endWidth = width * 0.65;
+  const color = depth < 1 ? '#4a2e12' : '#3a5a20';
+
+  if (midCount > 0){
+    const allPts = [{ x: startX, y: startY, t: 0 }, ...midPoints, { x: endX, y: endY, t: 1 }];
+    allPts.sort((a, b) => a.t - b.t);
+    for (let si = 0; si < allPts.length - 1; si++){
+      const p0 = allPts[si], p1 = allPts[si + 1];
+      const w1 = width + (endWidth - width) * p0.t;
+      const w2 = width + (endWidth - width) * p1.t;
+      wood.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, w1, w2, color });
+    }
+  } else {
+    wood.push({ x1: startX, y1: startY, x2: endX, y2: endY, w1: width, w2: endWidth, color });
+  }
+
+  // spawn mid-segment child branches — width at fork point
+  for (const mp of midPoints){
+    const midSpread = (0.4 + widthBias * 0.4);
+    const sp = (rng() < 0.5 ? -1 : 1) * (0.3 + rng() * midSpread) * Math.PI * 0.5;
+    let midAngle = angle + sp;
+    // bias upward: if pointing down, pull back toward horizontal
+    if (midAngle > -0.15) midAngle = -0.15 + (midAngle + 0.15) * 0.2;
+    const midLen = length * (0.35 + rng() * 0.2) * (1 - mp.t * 0.3);
+    const forkW = width + (endWidth - width) * mp.t;
+    const midW = Math.max(1.5, forkW * (0.5 + rng() * 0.2));
+    generateTreeBranches(rng, mp.x, mp.y, midAngle, midLen, midW, depth + 1, maxDepth, wood, frondRoots, widthBias);
+  }
+
+  // large fronds at major branch endpoints only (depth 1-2)
+  if (depth >= 1 && depth <= 2){
+    const fSize = 60 + length * 0.5 + rng() * 40;
+    const fAngle = angle + (rng() - 0.5) * 1.2;
+    const g = Math.floor(70 + rng() * 105);
+    frondRoots.push({ cx: endX, cy: endY, size: fSize, angle: fAngle, g, seed: Math.floor(rng() * 100000) });
+  }
+
+  // end-of-segment child branches
+  const numChildren = depth === 0
+    ? (3 + Math.floor(rng() * 2) + (widthBias > 0.6 ? 1 : 0))
+    : (1 + Math.floor(rng() * 3));
+  const spreadAng = depth === 0
+    ? (0.3 + widthBias * 0.6)
+    : (0.4 + widthBias * 0.35);
+  for (let i = 0; i < numChildren; i++){
+    const sp = (rng() - 0.5) * spreadAng * Math.PI;
+    let childAngle = angle + sp;
+    // bias upward: dampen any downward tendency
+    if (childAngle > -0.15) childAngle = -0.15 + (childAngle + 0.15) * 0.2;
+    const shrink = 0.45 + rng() * 0.2 + widthBias * 0.08;
+    const childLen = length * shrink;
+    const childW = Math.max(1.5, endWidth * (0.55 + rng() * 0.25));
+    generateTreeBranches(rng, endX, endY, childAngle, childLen, childW, depth + 1, maxDepth, wood, frondRoots, widthBias);
+  }
+}
+
+/* Convex hull (Andrew's monotone chain) */
+function convexHull(points){
+  const pts = points.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+  if (pts.length <= 2) return pts;
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower = [];
+  for (const p of pts){ while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop(); lower.push(p); }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--){ const p = pts[i]; while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop(); upper.push(p); }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+
+/* Frond: scatter points to define a canopy blob, compute the convex hull,
+   store as a single polygon. One fill() per frond at draw time. */
+function generateFrond(seed, size, angle, g){
+  const rng = () => Math.random();
+  // scatter sample points to form one large canopy mass
+  const raw = [];
+  const count = 6 + Math.floor(rng() * 4);
+  for (let i = 0; i < count; i++){
+    const t = (i + 0.3) / count;
+    const cx = Math.cos(angle) * size * 0.4 * t + (rng() - 0.5) * size * 0.7;
+    const cy = Math.sin(angle) * size * 0.4 * t + (rng() - 0.5) * size * 0.7;
+    const r = size * (0.35 + rng() * 0.25);
+    // expand each point into boundary samples (8 points around the circle)
+    for (let a = 0; a < 8; a++){
+      const ang = a * Math.PI * 0.25;
+      raw.push({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r });
+    }
+  }
+  const hull = convexHull(raw);
+  // also compute a smaller inner hull for highlight
+  const innerHull = hull.map(p => {
+    const cx = hull.reduce((s, h) => s + h.x, 0) / hull.length;
+    const cy = hull.reduce((s, h) => s + h.y, 0) / hull.length;
+    return { x: cx + (p.x - cx) * 0.5, y: cy + (p.y - cy) * 0.5 - size * 0.06 };
+  });
+  return { hull, innerHull, g };
+}
+
+const treeDefs = [];
+function initTrees(){
+  treeDefs.length = 0;
+  const r = Math.random;
+  for (let i = 0; i < TREE_COUNT; i++){
+    const rng = () => Math.random();
+    const x = i * (TREE_PERIOD / TREE_COUNT) + 200 + rng() * 400;
+    const widthBias = rng();  // 0 = tall/narrow, 1 = wide/spreading
+    const trunkLen = 500 + rng() * 300 + (1 - widthBias) * 150;
+    const trunkW = 42 + rng() * 30 + widthBias * 18;
+    const maxDepth = 5 + Math.floor(rng() * 2);
+    const wood = [], frondRoots = [];
+    const lean = (rng() - 0.5) * 0.15;
+    generateTreeBranches(rng, 0, 0, -Math.PI / 2 + lean, trunkLen, trunkW, 0, maxDepth, wood, frondRoots, widthBias);
+
+    const fronds = frondRoots.map(fr =>
+      ({ cx: fr.cx, cy: fr.cy, frond: generateFrond(fr.seed, fr.size, fr.angle, fr.g) })
+    );
+    // sort: high cy (near ground/back) first, low cy (up top/front) last
+    fronds.sort((a, b) => b.cy - a.cy);
+    // compute absolute y-range across entire tree for depth mapping
+    let minCy = Infinity, maxCy = -Infinity;
+    for (const fr of fronds){ if (fr.cy < minCy) minCy = fr.cy; if (fr.cy > maxCy) maxCy = fr.cy; }
+
+    treeDefs.push({ x, wood, fronds, minCy, maxCy });
+  }
+}
+initTrees();
+
+/* ---------- mid-foreground tree (full fractal tree, scaled down, rare) ---------- */
+const MFG_TREE_PERIOD = 3200;
+const mfgTreeDefs = [];
+function initMfgTrees(){
+  mfgTreeDefs.length = 0;
+  const rng = () => Math.random();
+  const x = 400 + rng() * (MFG_TREE_PERIOD - 800);
+  const widthBias = rng();
+  const scale = 0.55 + rng() * 0.15;
+  const trunkLen = (400 + rng() * 200) * scale;
+  const trunkW = (35 + rng() * 20 + widthBias * 12) * scale;
+  const maxDepth = 4 + Math.floor(rng() * 2);
+  const wood = [], frondRoots = [];
+  const lean = (rng() - 0.5) * 0.15;
+  generateTreeBranches(rng, 0, 0, -Math.PI / 2 + lean, trunkLen, trunkW, 0, maxDepth, wood, frondRoots, widthBias);
+  const fronds = frondRoots.map(fr =>
+    ({ cx: fr.cx, cy: fr.cy, frond: generateFrond(fr.seed, fr.size * scale, fr.angle, fr.g) })
+  );
+  mfgTreeDefs.push({ x, wood, fronds });
+}
+initMfgTrees();
+
+function drawMfgTrees(){
+  const factor = 0.65;
+  const off = ((scroll * factor) % MFG_TREE_PERIOD + MFG_TREE_PERIOD) % MFG_TREE_PERIOD;
+  const baseY = groundY * 0.96;
+
+  for (let rep = -off - MFG_TREE_PERIOD; rep < W + MFG_TREE_PERIOD; rep += MFG_TREE_PERIOD){
+    for (const t of mfgTreeDefs){
+      const tx = rep + t.x;
+      if (tx < -250 || tx > W + 250) continue;
+
+      for (const b of t.wood){
+        const sy1 = baseY + b.y1, sy2 = baseY + b.y2;
+        if (sy1 < -50 && sy2 < -50) continue;
+        if (sy1 > H + 50 && sy2 > H + 50) continue;
+        const dx = b.x2 - b.x1, dy = b.y2 - b.y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const px = -dy / len, py = dx / len;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.moveTo(tx + b.x1 + px * b.w1/2, sy1 + py * b.w1/2);
+        ctx.lineTo(tx + b.x2 + px * b.w2/2, sy2 + py * b.w2/2);
+        ctx.lineTo(tx + b.x2 - px * b.w2/2, sy2 - py * b.w2/2);
+        ctx.lineTo(tx + b.x1 - px * b.w1/2, sy1 - py * b.w1/2);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      for (const fr of t.fronds){
+        const ox = tx + fr.cx, oy = baseY + fr.cy;
+        if (oy < -150 || oy > H + 80 || ox < -150 || ox > W + 150) continue;
+        const f = fr.frond, g = f.g, hull = f.hull;
+        if (hull.length < 3) continue;
+        ctx.fillStyle = `rgb(${Math.round(18 + g * 0.1)},${g},${Math.round(18 + g * 0.08)})`;
+        ctx.beginPath();
+        ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x)/2, oy + (hull[hull.length-1].y + hull[0].y)/2);
+        for (let hi = 0; hi < hull.length; hi++){
+          const c = hull[hi], n = hull[(hi+1)%hull.length];
+          ctx.quadraticCurveTo(ox + c.x, oy + c.y, ox + (c.x+n.x)/2, oy + (c.y+n.y)/2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function drawTrees(){
+  const off = ((scroll * 0.85) % TREE_PERIOD + TREE_PERIOD) % TREE_PERIOD;
+  const baseY = groundY + 2;
+
+  for (let rep = -off - TREE_PERIOD; rep < W + TREE_PERIOD; rep += TREE_PERIOD){
+    for (const t of treeDefs){
+      const tx = rep + t.x;
+      if (tx < -350 || tx > W + 350) continue;
+
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.beginPath();
+      ctx.ellipse(tx, baseY + 3, 30, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // wood — tapered segments, skip if fully off screen
+      for (const b of t.wood){
+        const sy1 = baseY + b.y1, sy2 = baseY + b.y2;
+        if (sy1 < -50 && sy2 < -50) continue;           // above viewport
+        if (sy1 > H + 50 && sy2 > H + 50) continue;     // below viewport
+        const sx1 = tx + b.x1, sx2 = tx + b.x2;
+        if (sx1 < -80 && sx2 < -80) continue;
+        if (sx1 > W + 80 && sx2 > W + 80) continue;
+        const dx = b.x2 - b.x1;
+        const dy = b.y2 - b.y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const px = -dy / len;
+        const py = dx / len;
+        const hw1 = b.w1 / 2;
+        const hw2 = b.w2 / 2;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.moveTo(tx + b.x1 + px * hw1, sy1 + py * hw1);
+        ctx.lineTo(tx + b.x2 + px * hw2, sy2 + py * hw2);
+        ctx.lineTo(tx + b.x2 - px * hw2, sy2 - py * hw2);
+        ctx.lineTo(tx + b.x1 - px * hw1, sy1 - py * hw1);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // canopy blobs — sorted back-to-front, color based on absolute y in tree
+      const yRange = t.maxCy - t.minCy || 1;
+      for (const fr of t.fronds){
+        const ox = tx + fr.cx;
+        const oy = baseY + fr.cy;
+        if (oy < -200 || oy > H + 100 || ox < -200 || ox > W + 200) continue;
+        const f = fr.frond;
+        const hull = f.hull;
+        if (hull.length < 3) continue;
+
+        // 0 = bottom of tree (dark), 1 = top of tree (light)
+        const depthT = (t.maxCy - fr.cy) / yRange;
+        const g = f.g;
+        const lift = Math.round(depthT * 40);
+        const r = Math.round(18 + g * 0.1 + lift * 0.4);
+        const gv = Math.min(255, g + lift);
+        const b = Math.round(18 + g * 0.08 + lift * 0.3);
+
+        ctx.fillStyle = `rgb(${r},${gv},${b})`;
+        ctx.beginPath();
+        ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x) / 2, oy + (hull[hull.length-1].y + hull[0].y) / 2);
+        for (let hi = 0; hi < hull.length; hi++){
+          const curr = hull[hi];
+          const next = hull[(hi + 1) % hull.length];
+          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x + next.x) / 2, oy + (curr.y + next.y) / 2);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // inner highlight blob — also shifts lighter for top fronds
+        const ih = f.innerHull;
+        ctx.fillStyle = `rgb(${Math.round(30 + g * 0.12 + lift * 0.5)},${Math.min(255, g + 22 + lift)},${30 + Math.round(lift * 0.3)})`;
+        ctx.beginPath();
+        ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x) / 2, oy + (ih[ih.length-1].y + ih[0].y) / 2);
+        for (let hi = 0; hi < ih.length; hi++){
+          const curr = ih[hi];
+          const next = ih[(hi + 1) % ih.length];
+          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x + next.x) / 2, oy + (curr.y + next.y) / 2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+}
+
+/* ---------- ground ---------- */
+function drawGround(){
+  // base grass
+  ctx.fillStyle = '#2f6b3a';
+  ctx.fillRect(0, groundY, W, H - groundY);
+
+  // path/trail
+  ctx.fillStyle = '#8a7650';
+  ctx.fillRect(0, groundY + 4, W, 14);
+  ctx.fillStyle = '#7d6a48';
+  ctx.fillRect(0, groundY + 7, W, 8);
+
+  // grass tufts
+  ctx.fillStyle = '#3c8246';
+  tiled(42, 1, (x) => {
+    ctx.beginPath();
+    ctx.moveTo(x + 8, groundY + 20);
+    ctx.lineTo(x + 11, groundY + 8);
+    ctx.lineTo(x + 14, groundY + 20);
+    ctx.fill();
+  });
+
+  // second grass layer
+  ctx.fillStyle = '#327837';
+  tiled(63, 1.1, (x) => {
+    ctx.beginPath();
+    ctx.moveTo(x + 4, groundY + 22);
+    ctx.lineTo(x + 7, groundY + 13);
+    ctx.lineTo(x + 10, groundY + 22);
+    ctx.fill();
+  });
+
+  // wildflowers
+  tiled(97, 1, (x) => {
+    ctx.fillStyle = '#f2c94c';
+    ctx.beginPath(); ctx.arc(x + 30, groundY + 28, 2.4, 0, 7); ctx.fill();
+  });
+  tiled(131, 1, (x) => {
+    ctx.fillStyle = '#e87fa0';
+    ctx.beginPath(); ctx.arc(x + 50, groundY + 32, 2.0, 0, 7); ctx.fill();
+  });
+  tiled(173, 1, (x) => {
+    ctx.fillStyle = '#a7d8f0';
+    ctx.beginPath(); ctx.arc(x + 20, groundY + 26, 1.8, 0, 7); ctx.fill();
   });
 }
 
-function drawGround(){
-  ctx.fillStyle = '#2f6b3a';
-  ctx.fillRect(0, groundY, W, H-groundY);
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.fillRect(0, groundY, W, 4);
-  ctx.fillStyle = 'rgba(60,130,70,0.9)';
-  tiled(42, 1, (x,p) => {
+/* ---------- foreground grass (closest layer, in front of character, bottom of view) ---------- */
+function drawForegroundGrass(){
+  const bottom = H;
+  ctx.fillStyle = '#286e32';
+  tiled(30, 1.3, (x) => {
     ctx.beginPath();
-    ctx.moveTo(x+8, groundY+18);
-    ctx.lineTo(x+11, groundY+8);
-    ctx.lineTo(x+14, groundY+18);
+    ctx.moveTo(x, bottom);
+    ctx.lineTo(x + 5, bottom - 45);
+    ctx.lineTo(x + 10, bottom);
     ctx.fill();
   });
-  tiled(97, 1, (x,p) => {
-    ctx.fillStyle = '#f2c94c';
-    ctx.beginPath(); ctx.arc(x+30, groundY+26, 2.4, 0, 7); ctx.fill();
+  ctx.fillStyle = '#1f5a28';
+  tiled(44, 1.5, (x) => {
+    ctx.beginPath();
+    ctx.moveTo(x + 8, bottom);
+    ctx.lineTo(x + 13, bottom - 55);
+    ctx.lineTo(x + 18, bottom);
+    ctx.fill();
+  });
+  ctx.fillStyle = '#37823c';
+  tiled(52, 1.4, (x) => {
+    ctx.beginPath();
+    ctx.moveTo(x + 3, bottom);
+    ctx.lineTo(x + 7, bottom - 35);
+    ctx.lineTo(x + 11, bottom);
+    ctx.fill();
   });
 }
 
@@ -440,7 +1127,7 @@ function drawKrystal(){
       const dispW = dispH*(fw/fh);
       const foot = WALK_FOOT*dispH;
       ctx.drawImage(walkImg, walkFrame*fw, WALK_ROW_RIGHT*fh, fw, fh,
-                    feetX-dispW/2, groundY-dispH+foot-bob, dispW, dispH);
+                    feetX-dispW/2, groundY+10-dispH+foot-bob, dispW, dispH);
     }
   } else {
     const img = exprImgs[currentExpr];
@@ -449,15 +1136,18 @@ function drawKrystal(){
       const dispW = dispH*(fw/fh);
       const foot = EXPR_FOOT*dispH;
       ctx.drawImage(img, exprFrame*fw, 0, fw, fh,
-                    feetX-dispW/2, groundY-dispH+foot, dispW, dispH);
+                    feetX-dispW/2, groundY+10-dispH+foot, dispW, dispH);
     }
   }
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(feetX, groundY+3, 22, 6, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(feetX, groundY+13, 22, 6, 0, 0, 7); ctx.fill();
 }
 
 /* ---------- loop ---------- */
 function update(dt){
+  // clouds always drift, independent of character
+  cloudTime += dt;
+
   if (state === 'walk'){
     scroll += SPEED*dt;
     walkFrameTime += dt;
@@ -475,9 +1165,14 @@ function draw(){
   const sky = skyColors();
   drawSky(sky);
   drawClouds();
-  drawHills();
+  drawMountainsAndHills();
+  drawBgTrees();
+  drawMidTrees();
   drawGround();
+  drawMfgTrees();
+  drawTrees();
   drawKrystal();
+  drawForegroundGrass();
 }
 
 let last = performance.now();
