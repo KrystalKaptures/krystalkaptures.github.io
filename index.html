@@ -42,9 +42,8 @@
   #navlinks a{ margin:0 10px; }
 
   footer{ position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:3;
-          max-width:92vw; width:max-content; background:rgba(0,0,0,.42); backdrop-filter:blur(2px);
-          border-radius:20px; padding:8px 18px; text-align:center;
-          font-size:.8rem; color:#cfeeff; }
+          max-width:92vw; width:max-content; padding:8px 18px; text-align:center;
+          font-size:.8rem; color:#cfeeff; text-shadow:0 1px 3px rgba(20,60,25,.45); }
   footer a{ color:#bfe8ff; text-decoration:none; }
   footer a:hover{ color:#90D5FF; }
   footer .sep{ color:#7fb8d8; opacity:.6; margin:0 8px; }
@@ -73,7 +72,7 @@
   </div>
 
   <p id="navlinks">
-    <a href="https://krystalkaptures.github.io/klock/">?! Fun Time !?</a>
+    <a href="https://p4u1.com/birthday/8-3.html">take care of me</a>
     ·
     <a href="https://krystalkaptures.github.io/blink/">?! Blink !?</a>
   </p>
@@ -201,11 +200,26 @@ const FUN_TIMES = {
     return w.startsWith(prefix);
   }
 
-  function showWord(words, sourceLabel){
+  function fetchDefinition(word){
+    fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word))
+      .then(res => { if (!res.ok) throw new Error('No definition found'); return res.json(); })
+      .then(data => {
+        const meaning = data[0] && data[0].meanings && data[0].meanings[0];
+        const def = meaning && meaning.definitions && meaning.definitions[0] && meaning.definitions[0].definition;
+        if (!def) throw new Error('No definition in response');
+        const pos = meaning.partOfSpeech ? meaning.partOfSpeech + ' — ' : '';
+        document.getElementById('subLabel').textContent = pos + def;
+      })
+      .catch(() => {
+        document.getElementById('subLabel').textContent = '';
+      });
+  }
+
+  function showWord(words){
     const word = words[Math.floor(Math.random()*words.length)];
     document.getElementById('wordLabel').textContent = (word + ' ' + dayNames[dayIndex]).toUpperCase();
-    document.getElementById('subLabel').textContent =
-      'Picked from ' + words.length + ' matching adjectives (' + sourceLabel + ').';
+    document.getElementById('subLabel').textContent = 'Looking up definition…';
+    fetchDefinition(word);
   }
 
   fetch(ADJECTIVE_LIST_URL)
@@ -215,11 +229,11 @@ const FUN_TIMES = {
         .filter(w => w.length > 0 && /^[a-z][a-z-]*$/.test(w));
       const matched = allWords.filter(w => matchesDay(w, dayIndex));
       if (matched.length === 0) throw new Error('No matches in fetched list');
-      showWord(matched, 'live dictionary of ' + allWords.length + ' adjectives');
+      showWord(matched);
     })
     .catch(err => {
       console.warn('Falling back to built-in word list:', err);
-      showWord(FALLBACK_ADJECTIVES_BY_DAY[dayIndex], 'offline backup list');
+      showWord(FALLBACK_ADJECTIVES_BY_DAY[dayIndex]);
     });
 })();
 
@@ -268,6 +282,8 @@ let currentExpr = null;
 let actionTimer = 0;
 let nextRoutineAt = performance.now() + rand(18000,32000);
 let lastFunKey = null;
+let celebratingKey = null;
+let recelebrateAt = 0;
 
 const feetXFrac = 0.24;
 
@@ -280,8 +296,9 @@ function positionBubble(){
 
 /* ---------- fun-time celebration ---------- */
 function triggerCelebration(key, reason){
+  celebratingKey = key;
   state = 'celebrate';
-  actionTimer = 5;
+  actionTimer = 10;
   currentExpr = pick(CELEBRATE_POOL);
   exprFrame = 0; exprFrameTime = 0;
   bubble.textContent = `⏰ ${key} — ${reason}`;
@@ -298,7 +315,21 @@ function startRoutine(){
   exprFrame = 0; exprFrameTime = 0;
 }
 
+function currentFunKey(){
+  const now = new Date();
+  const h12 = (now.getHours() % 12) || 12;
+  return `${h12}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
 function endAction(){
+  if (state === 'celebrate' && celebratingKey && currentFunKey() === celebratingKey){
+    // still the same fun minute — take a brief break, then celebrate again
+    state = 'walk';
+    bubble.classList.remove('show');
+    recelebrateAt = performance.now() + 5000;
+    return;
+  }
+  celebratingKey = null;
   state = 'walk';
   bubble.classList.remove('show');
   nextRoutineAt = performance.now() + rand(18000,32000);
@@ -462,7 +493,12 @@ function update(dt){
     scroll += SPEED*dt;
     walkFrameTime += dt;
     if (walkFrameTime >= 1/WALK_FPS){ walkFrameTime -= 1/WALK_FPS; walkFrame = (walkFrame+1)%WALK_COLS; }
-    if (performance.now() >= nextRoutineAt) startRoutine();
+    if (celebratingKey && performance.now() >= recelebrateAt){
+      if (currentFunKey() === celebratingKey) triggerCelebration(celebratingKey, FUN_TIMES[celebratingKey]);
+      else celebratingKey = null;
+    } else if (!celebratingKey && performance.now() >= nextRoutineAt){
+      startRoutine();
+    }
   } else {
     exprFrameTime += dt;
     if (exprFrameTime >= 1/EXPR_FPS){ exprFrameTime -= 1/EXPR_FPS; exprFrame = (exprFrame+1)%EXPR_COLS; }
