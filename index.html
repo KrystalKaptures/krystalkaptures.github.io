@@ -32,41 +32,41 @@
   #debugPanel input{ width:56px; }
 
   #overlay{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:26px 16px 10px; text-align:center; }
-  #topCard{ background:rgba(0,0,0,.32); border-radius:24px; padding:22px 28px; backdrop-filter:blur(4px);
-            border:1px solid rgba(255,255,255,.08); }
-  #logo{ font-size:2.8rem; font-weight:900; letter-spacing:.35em; margin:0; padding:0;
-         background:linear-gradient(135deg, #f9a8d4, #c084fc, #7dd3fc, #f9a8d4);
-         background-size:300% 300%;
-         -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-         background-clip:text; color:transparent;
-         animation:logoShimmer 6s ease-in-out infinite;
-         text-shadow:none; filter:drop-shadow(0 2px 8px rgba(180,120,255,.3));
-         text-indent:.35em; }
-  @keyframes logoShimmer{ 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-  #tagline{ font-size:.75rem; letter-spacing:.18em; text-transform:uppercase; color:#d8b4fe;
-            margin:6px 0 0; opacity:.8; font-weight:500; }
-  #dayLabel{ font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:#c4b0e0;
-             margin:14px 0 2px; opacity:.7; }
-  #wordLabel{ font-size:1.5rem; font-weight:800; color:#e8d0ff; margin:0; word-break:break-word;
-              letter-spacing:.05em; }
-  #subLabel{ font-size:.68rem; color:#c0a8e0; opacity:.65; margin-top:4px; font-style:italic; }
-  #navlinks{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-             margin:18px 0 0; }
-  #navlinks a{ background:rgba(255,255,255,.1); padding:7px 18px; border-radius:50px;
-               text-decoration:none; color:#e0d0ff; font-size:.85rem; font-weight:600;
-               border:1px solid rgba(255,255,255,.12); transition:background .2s, transform .15s; }
-  #navlinks a:visited{ color:#e0d0ff; }
-  #navlinks a:hover{ background:rgba(255,255,255,.18); transform:scale(1.04); color:#e0d0ff; }
+  #topCard{ padding:10px 20px; }
+  @keyframes starHue{ 0%{filter:drop-shadow(0 2px 12px rgba(0,0,0,.5)) hue-rotate(0deg)}
+    100%{filter:drop-shadow(0 2px 12px rgba(0,0,0,.5)) hue-rotate(360deg)} }
+  #brandLogo{ display:block; width:min(100%, 280px); height:auto; margin:0 auto 6px;
+              animation:starHue .4s linear infinite; }
+  @keyframes starRainbow{
+    0%{color:#ff4040} 16%{color:#ffaa00} 33%{color:#ffff00}
+    50%{color:#40ff40} 66%{color:#4040ff} 83%{color:#ff40ff} 100%{color:#ff4040}
+  }
+  #dayLabel{ font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
+             margin:8px 0 2px; opacity:.9; text-shadow:0 1px 8px rgba(0,0,0,.7);
+             animation:starRainbow .4s linear infinite; }
+  #wordLabel{ font-size:1.5rem; font-weight:800; margin:0; word-break:break-word;
+              letter-spacing:.05em; text-shadow:0 2px 12px rgba(0,0,0,.7);
+              animation:starRainbow .4s linear infinite; animation-delay:-.3s; }
+  #subLabel{ font-size:.68rem; opacity:.85; margin-top:4px; font-style:italic;
+             text-shadow:0 1px 6px rgba(0,0,0,.6);
+             animation:starRainbow .4s linear infinite; animation-delay:-.6s; }
+  #navlinks{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0 0; }
+  #navlinks a{ padding:7px 18px; border-radius:50px; text-decoration:none;
+               font-size:.85rem; font-weight:600; transition:opacity .2s, transform .15s;
+               text-shadow:0 1px 8px rgba(0,0,0,.7);
+               animation:starRainbow .4s linear infinite; animation-delay:-.9s; }
+  #navlinks a:visited, #navlinks a:hover{ animation:starRainbow .4s linear infinite; }
+  #navlinks a:hover{ opacity:.75; transform:scale(1.04); }
   #navlinks a:active{ transform:scale(.97); }
 
   footer{ position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:3;
           max-width:92vw; width:max-content; padding:8px 20px; text-align:center;
           font-size:.78rem; color:#d8c8f0; background:rgba(0,0,0,.22); border-radius:50px;
           backdrop-filter:blur(3px); }
-  footer a{ color:#d8c8f0; text-decoration:none; transition:opacity .15s; }
-  footer a:visited{ color:#d8c8f0; }
-  footer a:hover{ color:#d8c8f0; opacity:.7; }
-  footer .sep{ color:#a88fd8; opacity:.4; margin:0 10px; }
+  footer, footer a{ text-decoration:none; animation:starRainbow .4s linear infinite; }
+  footer a:visited{ animation:starRainbow .4s linear infinite; }
+  footer a:hover{ opacity:.7; }
+  footer .sep{ opacity:.4; margin:0 10px; }
   footer img{ height:13px; vertical-align:middle; margin:0 3px 2px; border-radius:3px; }
 </style>
 
@@ -85,8 +85,7 @@
 
 <div id="overlay">
   <div id="topCard">
-    <h1 id="logo">KRYSTAL</h1>
-    <p id="tagline">out for a walk</p>
+    <img id="brandLogo" src="assets/krystal-logo-transparent.png" alt="Krystal with a K logo">
     <p id="dayLabel"></p>
     <p id="wordLabel">loading...</p>
     <p id="subLabel"></p>
@@ -224,10 +223,12 @@ const FUN_TIMES = {
     fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word))
       .then(res => { if (!res.ok) throw new Error('No definition found'); return res.json(); })
       .then(data => {
-        const meaning = data[0] && data[0].meanings && data[0].meanings[0];
-        const def = meaning && meaning.definitions && meaning.definitions[0] && meaning.definitions[0].definition;
+        const meanings = data[0] && data[0].meanings;
+        if (!meanings) throw new Error('No meanings in response');
+        const adjMeaning = meanings.find(m => m.partOfSpeech === 'adjective') || meanings[0];
+        const def = adjMeaning && adjMeaning.definitions && adjMeaning.definitions[0] && adjMeaning.definitions[0].definition;
         if (!def) throw new Error('No definition in response');
-        const pos = meaning.partOfSpeech ? meaning.partOfSpeech + ' \u2014 ' : '';
+        const pos = adjMeaning.partOfSpeech ? adjMeaning.partOfSpeech + ' \u2014 ' : '';
         document.getElementById('subLabel').textContent = pos + def;
       })
       .catch(() => {
