@@ -46,15 +46,15 @@
              animation:starRainbow .4s linear infinite; }
   #wordLabel{ font-size:1.5rem; font-weight:800; margin:0; word-break:break-word;
               letter-spacing:.05em; text-shadow:0 2px 12px rgba(0,0,0,.7);
-              animation:starRainbow .4s linear infinite; animation-delay:-.3s; }
+              animation:starRainbow .4s linear infinite; }
   #subLabel{ font-size:.68rem; opacity:.85; margin-top:4px; font-style:italic;
              text-shadow:0 1px 6px rgba(0,0,0,.6);
-             animation:starRainbow .4s linear infinite; animation-delay:-.6s; }
+             animation:starRainbow .4s linear infinite; }
   #navlinks{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0 0; }
   #navlinks a{ padding:7px 18px; border-radius:50px; text-decoration:none;
                font-size:.85rem; font-weight:600; transition:opacity .2s, transform .15s;
                text-shadow:0 1px 8px rgba(0,0,0,.7);
-               animation:starRainbow .4s linear infinite; animation-delay:-.9s; }
+               animation:starRainbow .4s linear infinite; }
   #navlinks a:visited, #navlinks a:hover{ animation:starRainbow .4s linear infinite; }
   #navlinks a:hover{ opacity:.75; transform:scale(1.04); }
   #navlinks a:active{ transform:scale(.97); }
@@ -306,6 +306,145 @@ let lastFunKey = null;
 let celebratingKey = null;
 let recelebrateAt = 0;
 
+/* ---------- jet flyover system ---------- */
+const jets = [];          // active flyover groups
+const JET_SMOKE_LIFE = 4; // seconds smoke lingers
+
+function launchJets(){
+  const originX = W * 0.5;
+  const originY = groundY * 0.48;
+  const krystalX = W * feetXFrac;
+  const treeY = groundY * 0.78;
+  const dur = 4.0;
+  // Lead jet: flies over Krystal's head, pulls up
+  jets.push({ startX: originX, startY: originY,
+              endX: krystalX, endY: -H * 0.5,
+              duration: dur, t: 0, breakDir: 0,
+              smokeColor: 'rgba(220,40,40,', smoke: [],
+              formOx: 0, formOy: 0 });
+  // Right wingman: breaks off to the right
+  jets.push({ startX: originX, startY: originY,
+              endX: W + 200, endY: -H * 0.3,
+              duration: dur, t: 0, breakDir: 1,
+              smokeColor: 'rgba(255,255,255,', smoke: [],
+              formOx: 12, formOy: -8 });
+  // Left wingman: breaks off to the left
+  jets.push({ startX: originX, startY: originY,
+              endX: -200, endY: -H * 0.3,
+              duration: dur, t: 0, breakDir: -1,
+              smokeColor: 'rgba(40,80,220,', smoke: [],
+              formOx: 12, formOy: 8 });
+}
+
+// Two-phase motion:
+// Phase 1 (0–0.65): slow descent from mountains toward tree line
+// Phase 2 (0.65–1): pull up hard and blast skyward
+function jetYPath(p, startY, endY){
+  const treeY = groundY * 0.78;  // where the foreground tree tops are
+  if (p < 0.65){
+    const t = p / 0.65;
+    return startY + (treeY - startY) * t * t;   // slow approach down to trees
+  }
+  const t = (p - 0.65) / 0.35;
+  return treeY + (endY - treeY) * t * t;         // pull up fast toward sky
+}
+function jetScale(p){
+  if (p < 0.65){
+    const t = p / 0.65;
+    return 0.15 + t * t * 1.8;   // small → medium through the layers
+  }
+  const t = (p - 0.65) / 0.35;
+  return 1.95 + t * 4;           // big as they pull up past us
+}
+
+function jetPos(j, p){
+  const scale = jetScale(p);
+  if (p < 0.65){
+    // formation phase: all fly together, offset by formOx/formOy
+    const t = p / 0.65;
+    const leaderX = j.startX;
+    const leaderY = j.startY + (groundY * 0.78 - j.startY) * t * t;
+    return { x: leaderX + j.formOx * scale, y: leaderY + j.formOy * scale, scale };
+  }
+  // breakoff phase: each jet goes to its own endX/endY
+  const bt = (p - 0.65) / 0.35;
+  const breakStartX = j.startX + j.formOx * jetScale(0.65);
+  const breakStartY = groundY * 0.78 + j.formOy * jetScale(0.65);
+  const x = breakStartX + (j.endX - breakStartX) * bt * bt;
+  const y = breakStartY + (j.endY - breakStartY) * bt * bt;
+  return { x, y, scale };
+}
+
+function updateJets(dt){
+  for (let g = jets.length - 1; g >= 0; g--){
+    const j = jets[g];
+    j.t += dt;
+    const p = Math.min(j.t / j.duration, 1);
+    const pos = jetPos(j, p);
+    j.smoke.push({ x: pos.x, y: pos.y, color: j.smokeColor, age: 0, scale: pos.scale });
+    // age smoke
+    for (let s = j.smoke.length - 1; s >= 0; s--){
+      j.smoke[s].age += dt;
+      if (j.smoke[s].age > JET_SMOKE_LIFE) j.smoke.splice(s, 1);
+    }
+    if (p >= 1 && j.smoke.length === 0) jets.splice(g, 1);
+  }
+}
+
+function drawJets(){
+  for (const j of jets){
+    // draw smoke trail
+    for (const s of j.smoke){
+      const alpha = Math.max(0, 0.45 * (1 - s.age / JET_SMOKE_LIFE));
+      const r = s.scale * 1.5 + s.age * 4;
+      ctx.fillStyle = s.color + alpha + ')';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // draw jet if still flying
+    const p = Math.min(j.t / j.duration, 1);
+    if (p >= 1) continue;
+    const pos = jetPos(j, p);
+    const dp = 0.005;
+    const pos2 = jetPos(j, Math.min(p + dp, 1));
+    const angle = Math.atan2(pos2.y - pos.y, pos2.x - pos.x);
+
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.rotate(angle);
+    ctx.scale(pos.scale, pos.scale);
+    // jet body
+    ctx.fillStyle = '#444';
+    ctx.beginPath();
+    ctx.moveTo(10, 0);
+    ctx.lineTo(-8, -3);
+    ctx.lineTo(-6, 0);
+    ctx.lineTo(-8, 3);
+    ctx.closePath();
+    ctx.fill();
+    // wings
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.moveTo(2, 0);
+    ctx.lineTo(-4, -7);
+    ctx.lineTo(-6, -6);
+    ctx.lineTo(-3, 0);
+    ctx.lineTo(-6, 6);
+    ctx.lineTo(-4, 7);
+    ctx.closePath();
+    ctx.fill();
+    // tail
+    ctx.beginPath();
+    ctx.moveTo(-6, 0);
+    ctx.lineTo(-10, -4);
+    ctx.lineTo(-10, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 const feetXFrac = 0.24;
 
 function dispHeight(){ return Math.max(100, Math.min(150, H*0.18)); }
@@ -326,6 +465,7 @@ function triggerCelebration(key, reason){
   positionBubble();
   bubble.classList.add('show');
   burstConfetti();
+  launchJets();
 }
 
 function startRoutine(){
@@ -2455,10 +2595,12 @@ function update(dt){
   cloudTime += dt;
   updateAirplanes(dt);
 
+  // Krystal always moves forward
+  scroll += SPEED*dt;
+  walkFrameTime += dt;
+  if (walkFrameTime >= 1/WALK_FPS){ walkFrameTime -= 1/WALK_FPS; walkFrame = (walkFrame+1)%WALK_COLS; }
+
   if (state === 'walk'){
-    scroll += SPEED*dt;
-    walkFrameTime += dt;
-    if (walkFrameTime >= 1/WALK_FPS){ walkFrameTime -= 1/WALK_FPS; walkFrame = (walkFrame+1)%WALK_COLS; }
     if (celebratingKey && performance.now() >= recelebrateAt){
       if (currentFunKey() === celebratingKey) triggerCelebration(celebratingKey, FUN_TIMES[celebratingKey]);
       else celebratingKey = null;
@@ -2471,6 +2613,8 @@ function update(dt){
     actionTimer -= dt;
     if (actionTimer <= 0) endAction();
   }
+
+  updateJets(dt);
 }
 
 function draw(){
@@ -2488,6 +2632,7 @@ function draw(){
   drawMidTrees();
   drawGround();
   drawMfgTrees();
+  drawJets();
   drawTrees();
   drawKrystal();
   drawForegroundGrass();
@@ -2519,6 +2664,11 @@ if (new URLSearchParams(location.search).has('debug')){
   });
   document.getElementById('debugRoutine').addEventListener('click', startRoutine);
 }
+
+/* ---------- keyboard: J = launch jets ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key === 'j' || e.key === 'J') launchJets();
+});
 </script>
 
 </body>
