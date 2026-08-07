@@ -32,21 +32,41 @@
   #debugPanel input{ width:56px; }
 
   #overlay{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:26px 16px 10px; text-align:center; }
-  #topCard{ background:rgba(0,0,0,.42); border-radius:16px; padding:16px 20px; backdrop-filter:blur(2px); }
-  #topCard h1{ font-size:1.4rem; margin-bottom:10px; }
-  #dayLabel{ font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:#bfe8ff; margin:0 0 2px; opacity:.85; }
-  #wordLabel{ font-size:1.7rem; font-weight:800; color:#90D5FF; margin:0; word-break:break-word; }
-  #subLabel{ font-size:.7rem; color:#9fd6f7; opacity:.75; margin-top:5px; }
-  #navlinks{ display:inline-block; margin:16px 0 0; background:rgba(0,0,0,.42); padding:8px 18px;
-             border-radius:20px; }
-  #navlinks a{ margin:0 10px; }
+  #topCard{ background:rgba(0,0,0,.32); border-radius:24px; padding:22px 28px; backdrop-filter:blur(4px);
+            border:1px solid rgba(255,255,255,.08); }
+  #logo{ font-size:2.8rem; font-weight:900; letter-spacing:.35em; margin:0; padding:0;
+         background:linear-gradient(135deg, #f9a8d4, #c084fc, #7dd3fc, #f9a8d4);
+         background-size:300% 300%;
+         -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+         background-clip:text; color:transparent;
+         animation:logoShimmer 6s ease-in-out infinite;
+         text-shadow:none; filter:drop-shadow(0 2px 8px rgba(180,120,255,.3));
+         text-indent:.35em; }
+  @keyframes logoShimmer{ 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  #tagline{ font-size:.75rem; letter-spacing:.18em; text-transform:uppercase; color:#d8b4fe;
+            margin:6px 0 0; opacity:.8; font-weight:500; }
+  #dayLabel{ font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:#c4b0e0;
+             margin:14px 0 2px; opacity:.7; }
+  #wordLabel{ font-size:1.5rem; font-weight:800; color:#e8d0ff; margin:0; word-break:break-word;
+              letter-spacing:.05em; }
+  #subLabel{ font-size:.68rem; color:#c0a8e0; opacity:.65; margin-top:4px; font-style:italic; }
+  #navlinks{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+             margin:18px 0 0; }
+  #navlinks a{ background:rgba(255,255,255,.1); padding:7px 18px; border-radius:50px;
+               text-decoration:none; color:#e0d0ff; font-size:.85rem; font-weight:600;
+               border:1px solid rgba(255,255,255,.12); transition:background .2s, transform .15s; }
+  #navlinks a:visited{ color:#e0d0ff; }
+  #navlinks a:hover{ background:rgba(255,255,255,.18); transform:scale(1.04); color:#e0d0ff; }
+  #navlinks a:active{ transform:scale(.97); }
 
   footer{ position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:3;
-          max-width:92vw; width:max-content; padding:8px 18px; text-align:center;
-          font-size:.8rem; color:#cfeeff; text-shadow:0 1px 3px rgba(20,60,25,.45); }
-  footer a{ color:#bfe8ff; text-decoration:none; }
-  footer a:hover{ color:#90D5FF; }
-  footer .sep{ color:#7fb8d8; opacity:.6; margin:0 8px; }
+          max-width:92vw; width:max-content; padding:8px 20px; text-align:center;
+          font-size:.78rem; color:#d8c8f0; background:rgba(0,0,0,.22); border-radius:50px;
+          backdrop-filter:blur(3px); }
+  footer a{ color:#d8c8f0; text-decoration:none; transition:opacity .15s; }
+  footer a:visited{ color:#d8c8f0; }
+  footer a:hover{ color:#d8c8f0; opacity:.7; }
+  footer .sep{ color:#a88fd8; opacity:.4; margin:0 10px; }
   footer img{ height:13px; vertical-align:middle; margin:0 3px 2px; border-radius:3px; }
 </style>
 
@@ -65,17 +85,17 @@
 
 <div id="overlay">
   <div id="topCard">
-    <h1>Krystal is out for a walk 🚶‍♀️💛</h1>
-    <p id="dayLabel">—</p>
-    <p id="wordLabel">loading…</p>
+    <h1 id="logo">KRYSTAL</h1>
+    <p id="tagline">out for a walk</p>
+    <p id="dayLabel"></p>
+    <p id="wordLabel">loading...</p>
     <p id="subLabel"></p>
   </div>
 
-  <p id="navlinks">
-    <a href="https://p4u1.com/birthday/8-3.html">Adventue with me</a>
-    ·
-    <a href="https://krystalkaptures.github.io/blink/"> ?! Play Blink !?</a>
-  </p>
+  <div id="navlinks">
+    <a href="https://p4u1.com/birthday/8-3.html">Adventure with me</a>
+    <a href="https://krystalkaptures.github.io/blink/">Play Blink</a>
+  </div>
 </div>
 
 <footer>
@@ -171,7 +191,7 @@ const FUN_TIMES = {
     '12:34': 'A clean counting sequence.'
 };
 
-/* ---------- adjective-of-the-day (same module as /day, ~27k-word list) ---------- */
+/* ---------- adjective-of-the-day ---------- */
 (function(){
   const ADJECTIVE_LIST_URL =
     "https://raw.githubusercontent.com/taikuukaits/SimpleWordlists/master/Wordlist-Adjectives-All.txt";
@@ -191,7 +211,7 @@ const FUN_TIMES = {
   const today = new Date();
   const dayIndex = today.getDay();
 
-  document.getElementById('dayLabel').textContent = dayNames[dayIndex] + ' · ' + today.toLocaleDateString();
+  document.getElementById('dayLabel').textContent = dayNames[dayIndex] + ' \u00b7 ' + today.toLocaleDateString();
 
   function matchesDay(word, dIndex){
     const w = word.toLowerCase();
@@ -207,7 +227,7 @@ const FUN_TIMES = {
         const meaning = data[0] && data[0].meanings && data[0].meanings[0];
         const def = meaning && meaning.definitions && meaning.definitions[0] && meaning.definitions[0].definition;
         if (!def) throw new Error('No definition in response');
-        const pos = meaning.partOfSpeech ? meaning.partOfSpeech + ' — ' : '';
+        const pos = meaning.partOfSpeech ? meaning.partOfSpeech + ' \u2014 ' : '';
         document.getElementById('subLabel').textContent = pos + def;
       })
       .catch(() => {
@@ -218,7 +238,7 @@ const FUN_TIMES = {
   function showWord(words){
     const word = words[Math.floor(Math.random()*words.length)];
     document.getElementById('wordLabel').textContent = (word + ' ' + dayNames[dayIndex]).toUpperCase();
-    document.getElementById('subLabel').textContent = 'Looking up definition…';
+    document.getElementById('subLabel').textContent = 'Looking up definition\u2026';
     fetchDefinition(word);
   }
 
@@ -478,6 +498,112 @@ function drawClouds(){
   }
 }
 
+/* ---------- airplane system (contrails + flashing lights) ---------- */
+const airplanes = [];
+
+function spawnAirplane(scatter){
+  const goRight = Math.random() < 0.5;
+  const y = 0.04 + Math.random() * 0.35;
+  const speed = 25 + Math.random() * 55;
+  const hasContrail = Math.random() < 0.4;
+  const contrailLen = 60 + Math.random() * 140;
+  const a = {
+    x: goRight ? -contrailLen - 30 : W + 30,
+    y,
+    speed: goRight ? speed : -speed,
+    hasContrail,
+    contrailLen,
+    flashPhase: Math.random() * Math.PI * 2,
+    flashSpeed: 2 + Math.random() * 3,
+    size: 1.5 + Math.random() * 1.5,
+  };
+  if (scatter) a.x = Math.random() * (W + 200) - 100;
+  return a;
+}
+
+function initAirplanes(){
+  airplanes.length = 0;
+  for (let i = 0; i < 5; i++) airplanes.push(spawnAirplane(true));
+}
+initAirplanes();
+
+function updateAirplanes(dt){
+  for (let i = 0; i < airplanes.length; i++){
+    const a = airplanes[i];
+    a.x += a.speed * dt;
+    if ((a.speed > 0 && a.x > W + 250) || (a.speed < 0 && a.x < -250)){
+      airplanes[i] = spawnAirplane(false);
+    }
+  }
+}
+
+function drawAirplanes(isNight){
+  const now = performance.now() / 1000;
+  for (const a of airplanes){
+    const sy = a.y * groundY;
+    const sx = a.x;
+
+    // contrail
+    if (a.hasContrail){
+      const dir = a.speed > 0 ? -1 : 1;
+      const tailX = sx + dir * a.contrailLen;
+      const grad = ctx.createLinearGradient(sx, sy, tailX, sy);
+      grad.addColorStop(0, 'rgba(255,255,255,0.45)');
+      grad.addColorStop(0.6, 'rgba(255,255,255,0.15)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tailX, sy);
+      ctx.stroke();
+      // second parallel trail (twin engine)
+      if (a.size > 2){
+        ctx.beginPath();
+        ctx.moveTo(sx, sy + 2.5);
+        ctx.lineTo(tailX, sy + 2.5);
+        ctx.stroke();
+      }
+    }
+
+    // airplane
+    if (isNight){
+      // always-on dim nav light
+      ctx.fillStyle = 'rgba(255,100,100,0.25)';
+      ctx.beginPath();
+      ctx.arc(sx, sy, a.size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      // alternating white strobe / red beacon
+      const flash = Math.sin(now * a.flashSpeed + a.flashPhase);
+      if (flash > 0.3){
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(sx, sy, a.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (flash < -0.3){
+        ctx.fillStyle = 'rgba(255,40,40,0.8)';
+        ctx.beginPath();
+        ctx.arc(sx, sy, a.size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // daytime: silver glint
+      ctx.fillStyle = 'rgba(220,220,235,0.85)';
+      ctx.beginPath();
+      ctx.arc(sx, sy, a.size, 0, Math.PI * 2);
+      ctx.fill();
+      // tiny wing flash
+      const glint = Math.sin(now * 1.5 + a.flashPhase);
+      if (glint > 0.7){
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath();
+        ctx.arc(sx, sy, a.size * 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
 /* ---------- terrain height profile generator ---------- */
 /* Builds a profile from a chain of wave segments. Each segment is a
    cosine-interpolated arc between two knot heights. Segments have random
@@ -562,44 +688,875 @@ function drawTerrainLayer(color, profile, period, factor, baseY, heightScale){
 /* ---------- layer profiles (generated once) ---------- */
 // Mountains: many narrow knots, large height range → jagged
 const mtProfiles = [
-  generateProfile(101, 18, 64, 0.0, 1.0),
-  generateProfile(202, 15, 64, 0.0, 1.0),
-  generateProfile(303, 14, 56, 0.1, 0.9),
+  generateProfile(101, 30, 120, 0.0, 1.0),
+  generateProfile(142, 26, 100, 0.0, 1.0),
+  generateProfile(202, 22, 90, 0.0, 1.0),
+  generateProfile(303, 18, 80, 0.1, 0.9),
 ];
-// Hills: fewer wider knots, moderate range → rounder
+// Hills: rolling green hills between mountains and cities
 const hillProfiles = [
-  generateProfile(404, 10, 48, 0.1, 0.85),
-  generateProfile(505,  9, 48, 0.15, 0.8),
-  generateProfile(556,  8, 40, 0.2, 0.75),
-  generateProfile(606,  7, 40, 0.2, 0.7),
-  generateProfile(657,  6, 36, 0.25, 0.65),
+  generateProfile(151, 8, 40, 0.15, 0.85),
+  generateProfile(192, 7, 38, 0.18, 0.82),
+  generateProfile(252, 7, 36, 0.2, 0.8),
 ];
-// Meadow: few wide knots, gentle range
-const meadowProfiles = [
+// Suburb terrain: gentle rolling
+const suburbTerrainProfiles = [
+  generateProfile(340, 5, 34, 0.18, 0.58),
+  generateProfile(350, 5, 32, 0.2, 0.55),
+  generateProfile(360, 4, 28, 0.25, 0.5),
+  generateProfile(365, 4, 26, 0.28, 0.48),
+];
+// Industrial terrain: very flat
+const industrialTerrainProfiles = [
+  generateProfile(370, 4, 24, 0.3, 0.5),
+  generateProfile(375, 4, 22, 0.32, 0.48),
+  generateProfile(380, 3, 20, 0.35, 0.45),
+  generateProfile(385, 3, 18, 0.38, 0.42),
+];
+// City terrain: gentle undulation under buildings
+const cityTerrainProfiles = [
+  generateProfile(404, 6, 36, 0.2, 0.6),
+  generateProfile(505, 5, 32, 0.25, 0.55),
+  generateProfile(556, 5, 28, 0.3, 0.5),
+];
+// Farm terrain: rolling fields
+const farmProfiles = [
   generateProfile(707, 5, 32, 0.3, 0.6),
+  generateProfile(728, 5, 30, 0.32, 0.58),
   generateProfile(758, 4, 28, 0.35, 0.55),
+  generateProfile(779, 4, 26, 0.38, 0.52),
 ];
 
-function drawMountainsAndHills(){
-  //        color       profile              period  scroll  baseY-frac  hScale
-  // --- distant mountains: small waves ---
-  drawTerrainLayer('#3a4d6a', mtProfiles[0],   1600, 0.02, groundY * 0.58,  18);
-  drawTerrainLayer('#334a5e', mtProfiles[1],   1300, 0.04, groundY * 0.62,  20);
-  drawTerrainLayer('#2e4050', mtProfiles[2],   1050, 0.07, groundY * 0.66,  22);
-  // --- foothills: growing ---
-  drawTerrainLayer('#243e3a', hillProfiles[0],  850, 0.11, groundY * 0.70,  26);
-  drawTerrainLayer('#1e3c28', hillProfiles[1],  700, 0.16, groundY * 0.74,  30);
-  drawTerrainLayer('#225530', hillProfiles[2],  580, 0.22, groundY * 0.78,  34);
-  // --- near hills: biggest waves ---
-  drawTerrainLayer('#286030', hillProfiles[3],  450, 0.30, groundY * 0.82,  40);
-  drawTerrainLayer('#2d6338', hillProfiles[4],  360, 0.40, groundY * 0.86,  44);
-  // --- meadow: large gentle rolls ---
-  drawTerrainLayer('#2e6a38', meadowProfiles[0],280, 0.52, groundY * 0.90,  36);
-  drawTerrainLayer('#2f6b3a', meadowProfiles[1],220, 0.65, groundY * 0.95,  24);
+function drawMountains(){
+  drawTerrainLayer('#3a4d6a', mtProfiles[0], 1800, 0.01, groundY * 0.52, 28);
+  drawTerrainLayer('#364968', mtProfiles[1], 1600, 0.03, groundY * 0.56, 26);
+  drawTerrainLayer('#334a5e', mtProfiles[2], 1300, 0.05, groundY * 0.60, 24);
+  drawTerrainLayer('#2e4050', mtProfiles[3], 1050, 0.07, groundY * 0.64, 22);
+}
+
+function drawHills(){
+  drawTerrainLayer('#2a5038', hillProfiles[0], 900, 0.08, groundY * 0.66, 22);
+  drawTerrainLayer('#275232', hillProfiles[1], 800, 0.09, groundY * 0.68, 25);
+  drawTerrainLayer('#255530', hillProfiles[2], 700, 0.10, groundY * 0.70, 28);
+}
+
+/* ---------- suburb layers (small houses, spaced out) ---------- */
+const suburbDefs = [];
+
+function initSuburbs(){
+  suburbDefs.length = 0;
+  const configs = [
+    { period: 3000, factor: 0.26, baseYFrac: 0.83, terrainIdx: 0, hScale: 6, count: 65, terrainColor: '#4e6440' },
+    { period: 2600, factor: 0.28, baseYFrac: 0.84, terrainIdx: 1, hScale: 7, count: 58, terrainColor: '#4a6038' },
+    { period: 2200, factor: 0.30, baseYFrac: 0.86, terrainIdx: 2, hScale: 7, count: 52, terrainColor: '#465c34' },
+    { period: 1900, factor: 0.32, baseYFrac: 0.87, terrainIdx: 3, hScale: 8, count: 48, terrainColor: '#3e5830' },
+  ];
+  const houseColors = ['#5e5650','#6a5a4a','#5a4e42','#4e4840','#6e6050','#5a5048','#625848','#584e46','#6a6258','#786858'];
+  const roofColors = ['#3a3230','#4a3a30','#2e2826','#3e3430','#5a4a3a','#322c2a','#4a4038','#3a3028'];
+  for (const cfg of configs){
+    const houses = [];
+    const spacing = cfg.period / cfg.count;
+    for (let i = 0; i < cfg.count; i++){
+      const x = i * spacing + Math.random() * spacing * 0.4;
+      const w = 8 + Math.random() * 12;
+      const h = 7 + Math.random() * 10;
+      const roofH = h * (0.25 + Math.random() * 0.3);
+      const bodyColor = houseColors[Math.floor(Math.random() * houseColors.length)];
+      const roofColor = roofColors[Math.floor(Math.random() * roofColors.length)];
+      const wSize = 1.5 + Math.random() * 1;
+      const windows = [];
+      const winCount = 1 + Math.floor(Math.random() * 3);
+      for (let wi = 0; wi < winCount; wi++){
+        windows.push({ dx: (wi + 1) * w / (winCount + 1) - wSize / 2, dy: h * (0.2 + Math.random() * 0.2) });
+      }
+      houses.push({ x, w, h, roofH, windows, wSize, bodyColor, roofColor });
+    }
+    // cell/radio towers — clear houses in a gap around each
+    const towers = [];
+    const towerCount = Math.random() < 0.25 ? 1 : 0;
+    for (let ti = 0; ti < towerCount; ti++){
+      const tx = cfg.period * (0.15 + Math.random() * 0.7);
+      const tH = 300 + Math.random() * 120;
+      const gap = 50 + Math.random() * 30;
+      towers.push({ x: tx, h: tH, flashPhase: Math.random() * Math.PI * 2 });
+      // remove houses within the gap
+      for (let hi = houses.length - 1; hi >= 0; hi--){
+        if (Math.abs(houses[hi].x - tx) < gap) houses.splice(hi, 1);
+      }
+    }
+    // rare free-standing water towers
+    const waterTowers = [];
+    const wtCount = Math.random() < 0.5 ? 1 : (Math.random() < 0.3 ? 2 : 0);
+    const wtTypes = ['sphere','mushroom','standpipe','multileg','pedesphere','compositeleg','fluted','ufo','smoothdome'];
+    for (let wi = 0; wi < wtCount; wi++){
+      const wx = cfg.period * (0.1 + Math.random() * 0.8);
+      const wType = wtTypes[Math.floor(Math.random() * wtTypes.length)];
+      const legH = 45 + Math.random() * 25;
+      const tankR = 8 + Math.random() * 6;
+      const bodyColor = ['#6a8aaa','#5a7a9a','#7a9aba','#8aaaca','#5080a8','#4a7090','#8a8a82','#9a9a92'][Math.floor(Math.random() * 8)];
+      waterTowers.push({ x: wx, type: wType, legH, tankR, bodyColor });
+      for (let hi = houses.length - 1; hi >= 0; hi--){
+        if (Math.abs(houses[hi].x - wx) < 25) houses.splice(hi, 1);
+      }
+    }
+    suburbDefs.push({ ...cfg, houses, towers, waterTowers });
+  }
+}
+initSuburbs();
+
+function drawSuburbs(){
+  for (const layer of suburbDefs){
+    const baseY = groundY * layer.baseYFrac;
+    const prof = suburbTerrainProfiles[layer.terrainIdx];
+    drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.hScale);
+
+    const off = ((scroll * layer.factor) % layer.period + layer.period) % layer.period;
+    for (let rep = -off - layer.period; rep < W + layer.period; rep += layer.period){
+      for (const h of layer.houses){
+        const hx = rep + h.x;
+        if (hx + h.w < -5 || hx > W + 5) continue;
+        const th = profileHeightAt(prof, h.x / layer.period) * layer.hScale;
+        const surfaceY = baseY - th;
+        ctx.fillStyle = h.bodyColor;
+        ctx.fillRect(hx, surfaceY - h.h, h.w, h.h);
+        ctx.fillStyle = h.roofColor;
+        ctx.beginPath();
+        ctx.moveTo(hx - 2, surfaceY - h.h);
+        ctx.lineTo(hx + h.w / 2, surfaceY - h.h - h.roofH);
+        ctx.lineTo(hx + h.w + 2, surfaceY - h.h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,216,110,0.15)';
+        for (const win of h.windows){
+          ctx.fillRect(hx + win.dx, surfaceY - h.h + win.dy, h.wSize, h.wSize);
+        }
+      }
+      // cell/radio towers
+      const now = performance.now() / 1000;
+      for (const tw of layer.towers){
+        const tx = rep + tw.x;
+        if (tx < -20 || tx > W + 20) continue;
+        const th = profileHeightAt(prof, tw.x / layer.period) * layer.hScale;
+        const surfaceY = baseY - th;
+        // lattice tower structure
+        ctx.strokeStyle = '#5a5a5a';
+        ctx.lineWidth = 1.2;
+        // main legs (tapered)
+        const topW = 3;
+        const botW = 16;
+        ctx.beginPath();
+        ctx.moveTo(tx - botW / 2, surfaceY);
+        ctx.lineTo(tx - topW / 2, surfaceY - tw.h);
+        ctx.moveTo(tx + botW / 2, surfaceY);
+        ctx.lineTo(tx + topW / 2, surfaceY - tw.h);
+        ctx.stroke();
+        // cross bracing
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = '#4a4a4a';
+        ctx.beginPath();
+        const braceStep = 8;
+        for (let by = 0; by < tw.h; by += braceStep){
+          const t1 = by / tw.h;
+          const t2 = Math.min(1, (by + braceStep) / tw.h);
+          const lw1 = botW / 2 - (botW - topW) / 2 * t1;
+          const lw2 = botW / 2 - (botW - topW) / 2 * t2;
+          ctx.moveTo(tx - lw1, surfaceY - by);
+          ctx.lineTo(tx + lw2, surfaceY - by - braceStep);
+          ctx.moveTo(tx + lw1, surfaceY - by);
+          ctx.lineTo(tx - lw2, surfaceY - by - braceStep);
+        }
+        ctx.stroke();
+        // antenna mast at top
+        ctx.fillStyle = '#6a6a6a';
+        ctx.fillRect(tx - 0.5, surfaceY - tw.h - 8, 1, 8);
+        // support cables at multiple heights
+        ctx.strokeStyle = 'rgba(90,90,90,0.35)';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        const cableHeights = [0.85, 0.65, 0.40];
+        const cableSpans = [80, 60, 40];
+        for (let ci = 0; ci < cableHeights.length; ci++){
+          const cy = surfaceY - tw.h * cableHeights[ci];
+          const span = cableSpans[ci];
+          ctx.moveTo(tx, cy);
+          ctx.lineTo(tx - span, surfaceY);
+          ctx.moveTo(tx, cy);
+          ctx.lineTo(tx + span, surfaceY);
+        }
+        ctx.stroke();
+        // flashing red light
+        const flash = Math.sin(now * 2.5 + tw.flashPhase);
+        if (flash > -0.2){
+          const glow = 0.4 + 0.6 * Math.max(0, flash);
+          ctx.fillStyle = `rgba(255,20,20,${glow.toFixed(2)})`;
+          ctx.beginPath();
+          ctx.arc(tx, surfaceY - tw.h - 8, 2, 0, Math.PI * 2);
+          ctx.fill();
+          // glow halo
+          if (flash > 0.3){
+            ctx.fillStyle = `rgba(255,40,40,${(glow * 0.25).toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(tx, surfaceY - tw.h - 8, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      // suburb water towers
+      for (const wt of layer.waterTowers){
+        const wtx = rep + wt.x;
+        if (wtx < -20 || wtx > W + 20) continue;
+        const th = profileHeightAt(prof, wt.x / layer.period) * layer.hScale;
+        const surfaceY = baseY - th;
+        const lh = wt.legH, tr = wt.tankR;
+        ctx.fillStyle = wt.bodyColor;
+        ctx.strokeStyle = wt.bodyColor;
+        ctx.lineWidth = 1.5;
+        if (wt.type === 'sphere'){
+          // single thick column + sphere on top
+          ctx.fillRect(wtx - 2, surfaceY - lh, 4, lh);
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr, tr, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (wt.type === 'mushroom'){
+          // narrow stem + wide flat-bottom bowl
+          ctx.fillRect(wtx - 1.5, surfaceY - lh, 3, lh);
+          ctx.beginPath();
+          ctx.ellipse(wtx, surfaceY - lh - tr * 0.4, tr * 1.3, tr * 0.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(wtx - tr * 0.3, surfaceY - lh - tr, tr * 0.6, 2);
+        } else if (wt.type === 'standpipe'){
+          // tall narrow cylinder
+          const sw = tr * 0.6;
+          ctx.fillRect(wtx - sw, surfaceY - lh - tr * 2, sw * 2, lh + tr * 2);
+          // cap
+          ctx.beginPath();
+          ctx.ellipse(wtx, surfaceY - lh - tr * 2, sw, sw * 0.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (wt.type === 'multileg'){
+          // 3-4 legs + tank
+          ctx.beginPath();
+          ctx.moveTo(wtx - 5, surfaceY);
+          ctx.lineTo(wtx - 2, surfaceY - lh);
+          ctx.moveTo(wtx + 5, surfaceY);
+          ctx.lineTo(wtx + 2, surfaceY - lh);
+          ctx.moveTo(wtx - 1, surfaceY);
+          ctx.lineTo(wtx, surfaceY - lh);
+          ctx.stroke();
+          // cross brace
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(wtx - 4, surfaceY - lh * 0.4);
+          ctx.lineTo(wtx + 4, surfaceY - lh * 0.4);
+          ctx.stroke();
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(wtx, surfaceY - lh - tr * 0.5, tr, tr * 0.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (wt.type === 'pedesphere'){
+          // pedestal column + sphere
+          const pw = 3;
+          ctx.fillRect(wtx - pw, surfaceY - lh, pw * 2, lh);
+          // flared base
+          ctx.beginPath();
+          ctx.moveTo(wtx - pw - 2, surfaceY);
+          ctx.lineTo(wtx - pw, surfaceY - 4);
+          ctx.lineTo(wtx + pw, surfaceY - 4);
+          ctx.lineTo(wtx + pw + 2, surfaceY);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr * 0.9, tr, 0, Math.PI * 2);
+          ctx.fill();
+          // cap nub
+          ctx.fillRect(wtx - 1, surfaceY - lh - tr * 1.8 - 3, 2, 3);
+        } else if (wt.type === 'compositeleg'){
+          // concealed base: wide tapered concrete column hiding legs, sphere on top
+          const bw = 5 + tr * 0.5;
+          ctx.fillStyle = '#9a9a90';
+          ctx.beginPath();
+          ctx.moveTo(wtx - bw, surfaceY);
+          ctx.lineTo(wtx - 2, surfaceY - lh);
+          ctx.lineTo(wtx + 2, surfaceY - lh);
+          ctx.lineTo(wtx + bw, surfaceY);
+          ctx.closePath();
+          ctx.fill();
+          // sphere tank
+          ctx.fillStyle = wt.bodyColor;
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr, tr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(wtx - 1, surfaceY - lh - tr * 2 - 2, 2, 2);
+        } else if (wt.type === 'fluted'){
+          // concealed base: wide fluted column (like a wine glass), bowl on top
+          const bw = 6 + tr * 0.4;
+          ctx.fillStyle = '#9a9a90';
+          // fluted column — curves inward then out
+          ctx.beginPath();
+          ctx.moveTo(wtx - bw, surfaceY);
+          ctx.quadraticCurveTo(wtx - 1.5, surfaceY - lh * 0.6, wtx - 2.5, surfaceY - lh);
+          ctx.lineTo(wtx + 2.5, surfaceY - lh);
+          ctx.quadraticCurveTo(wtx + 1.5, surfaceY - lh * 0.6, wtx + bw, surfaceY);
+          ctx.closePath();
+          ctx.fill();
+          // wide bowl tank
+          ctx.fillStyle = wt.bodyColor;
+          ctx.beginPath();
+          ctx.ellipse(wtx, surfaceY - lh - tr * 0.5, tr * 1.4, tr * 0.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // dome top
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr * 0.5 - tr * 0.6, tr * 0.6, Math.PI, 0);
+          ctx.fill();
+        } else if (wt.type === 'ufo'){
+          // UFO/flying saucer shape on narrow column
+          ctx.fillStyle = '#8a8a82';
+          ctx.fillRect(wtx - 2, surfaceY - lh, 4, lh);
+          ctx.fillStyle = wt.bodyColor;
+          // wide saucer disc
+          ctx.beginPath();
+          ctx.ellipse(wtx, surfaceY - lh - tr * 0.3, tr * 1.6, tr * 0.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // dome on top
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr * 0.3, tr * 0.7, Math.PI, 0);
+          ctx.fill();
+          // small cap
+          ctx.fillRect(wtx - 1, surfaceY - lh - tr * 0.3 - tr * 0.7 - 2, 2, 2);
+        } else if (wt.type === 'smoothdome'){
+          // smooth teardrop/dome on concealed tapered base
+          const bw = 5 + tr * 0.3;
+          ctx.fillStyle = '#9a9a90';
+          ctx.beginPath();
+          ctx.moveTo(wtx - bw, surfaceY);
+          ctx.quadraticCurveTo(wtx - 1, surfaceY - lh * 0.5, wtx - 2, surfaceY - lh);
+          ctx.lineTo(wtx + 2, surfaceY - lh);
+          ctx.quadraticCurveTo(wtx + 1, surfaceY - lh * 0.5, wtx + bw, surfaceY);
+          ctx.closePath();
+          ctx.fill();
+          // smooth dome tank
+          ctx.fillStyle = wt.bodyColor;
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh, tr, 0, Math.PI * 2);
+          ctx.fill();
+          // smooth top dome
+          ctx.beginPath();
+          ctx.arc(wtx, surfaceY - lh - tr * 0.3, tr * 0.75, Math.PI, 0);
+          ctx.fill();
+        }
+      }
+    }
+  }
+}
+
+/* ---------- industrial layers (dense low warehouses/factories, behind city) ---------- */
+const industrialDefs = [];
+
+function initIndustrial(){
+  industrialDefs.length = 0;
+  const configs = [
+    { period: 2800, factor: 0.18, baseYFrac: 0.77, terrainIdx: 0, hScale: 5, count: 80, baseColor: [78,78,82], terrainColor: '#3e4444' },
+    { period: 2400, factor: 0.20, baseYFrac: 0.79, terrainIdx: 1, hScale: 5, count: 70, baseColor: [74,74,78], terrainColor: '#3a4040' },
+    { period: 2000, factor: 0.22, baseYFrac: 0.80, terrainIdx: 2, hScale: 6, count: 60, baseColor: [68,68,72], terrainColor: '#363c3c' },
+    { period: 1700, factor: 0.24, baseYFrac: 0.82, terrainIdx: 3, hScale: 6, count: 55, baseColor: [62,62,68], terrainColor: '#323838' },
+  ];
+  for (const cfg of configs){
+    const buildings = [];
+    const spacing = cfg.period / cfg.count;
+    for (let i = 0; i < cfg.count; i++){
+      const x = i * spacing + Math.random() * spacing * 0.15;
+      const w = 18 + Math.random() * 30;
+      const h = 8 + Math.random() * 8;
+      const hasStack = Math.random() < 0.25;
+      const stackH = 6 + Math.random() * 12;
+      const doors = [];
+      const doorCount = 1 + Math.floor(Math.random() * 4);
+      const doorW = 2 + Math.random() * 2;
+      for (let di = 0; di < doorCount; di++){
+        doors.push({ dx: (di + 1) * w / (doorCount + 1) - doorW / 2 });
+      }
+      const cr = cfg.baseColor[0] + Math.floor(Math.random() * 20 - 10);
+      const cg = cfg.baseColor[1] + Math.floor(Math.random() * 20 - 10);
+      const cb = cfg.baseColor[2] + Math.floor(Math.random() * 20 - 10);
+      const bColor = `rgb(${cr},${cg},${cb})`;
+      buildings.push({ x, w, h, hasStack, stackH, doors, doorW, special: null, bColor });
+    }
+    // scatter water towers and antenna towers
+    const specialCount = 3 + Math.floor(Math.random() * 4);
+    for (let si = 0; si < specialCount; si++){
+      const sx = Math.random() * cfg.period;
+      const sType = Math.random() < 0.7 ? 'water' : 'antenna';
+      const legH = 4 + Math.random() * 4;
+      const tankR = 2 + Math.random() * 2;
+      const antH = 80 + Math.random() * 70;
+      buildings.push({ x: sx, w: 0, h: 0, hasStack: false, stackH: 0, doors: [], doorW: 0,
+        special: sType, legH, tankR, antH, bColor: '#4a4a4e' });
+    }
+    industrialDefs.push({ ...cfg, buildings });
+  }
+}
+initIndustrial();
+
+function drawIndustrial(){
+  for (const layer of industrialDefs){
+    const baseY = groundY * layer.baseYFrac;
+    const prof = industrialTerrainProfiles[layer.terrainIdx];
+    drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.hScale);
+
+    const off = ((scroll * layer.factor) % layer.period + layer.period) % layer.period;
+    for (let rep = -off - layer.period; rep < W + layer.period; rep += layer.period){
+      for (const b of layer.buildings){
+        const bx = rep + b.x;
+        if (bx + b.w < -5 || bx > W + 5) continue;
+        const th = profileHeightAt(prof, b.x / layer.period) * layer.hScale;
+        const surfaceY = baseY - th;
+        ctx.fillStyle = b.bColor;
+        ctx.fillRect(bx, surfaceY - b.h, b.w, b.h + 1);
+        if (b.hasStack){
+          ctx.fillRect(bx + b.w * 0.7, surfaceY - b.h - b.stackH, 3, b.stackH);
+        }
+        if (b.special === 'water'){
+          // rooftop water tank — small barrel on short legs atop building level
+          const roofY = surfaceY - 10;
+          ctx.fillStyle = '#6a6a6a';
+          // short legs
+          ctx.fillRect(bx - 3, roofY - b.legH * 0.3, 1.5, b.legH * 0.3);
+          ctx.fillRect(bx + 2, roofY - b.legH * 0.3, 1.5, b.legH * 0.3);
+          // barrel tank
+          ctx.fillStyle = '#7a7a72';
+          const tw = b.tankR * 1.2, tth = b.tankR * 1.4;
+          ctx.fillRect(bx - tw, roofY - b.legH * 0.3 - tth, tw * 2, tth);
+          // conical roof
+          ctx.fillStyle = '#5a5a55';
+          ctx.beginPath();
+          ctx.moveTo(bx - tw - 1, roofY - b.legH * 0.3 - tth);
+          ctx.lineTo(bx, roofY - b.legH * 0.3 - tth - 4);
+          ctx.lineTo(bx + tw + 1, roofY - b.legH * 0.3 - tth);
+          ctx.closePath();
+          ctx.fill();
+          // barrel bands
+          ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+          ctx.lineWidth = 0.5;
+          for (let bi = 1; bi < 3; bi++){
+            const by = roofY - b.legH * 0.3 - tth * bi / 3;
+            ctx.beginPath();
+            ctx.moveTo(bx - tw, by);
+            ctx.lineTo(bx + tw, by);
+            ctx.stroke();
+          }
+        } else if (b.special === 'antenna'){
+          // antenna tower: lattice mast + guy wires
+          ctx.fillStyle = '#5a5a5a';
+          ctx.fillRect(bx, surfaceY - b.antH, 2, b.antH);
+          // cross members
+          ctx.strokeStyle = '#4a4a4a';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          for (let ay = 0; ay < b.antH; ay += 6){
+            ctx.moveTo(bx - 2, surfaceY - ay);
+            ctx.lineTo(bx + 4, surfaceY - ay - 3);
+            ctx.moveTo(bx + 4, surfaceY - ay);
+            ctx.lineTo(bx - 2, surfaceY - ay - 3);
+          }
+          ctx.stroke();
+          // blinking light at top
+          ctx.fillStyle = 'rgba(255,40,40,0.7)';
+          ctx.beginPath();
+          ctx.arc(bx + 1, surfaceY - b.antH, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          // guy wires
+          ctx.strokeStyle = 'rgba(80,80,80,0.4)';
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(bx + 1, surfaceY - b.antH * 0.7);
+          ctx.lineTo(bx - 12, surfaceY);
+          ctx.moveTo(bx + 1, surfaceY - b.antH * 0.7);
+          ctx.lineTo(bx + 14, surfaceY);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = '#2a2a30';
+          for (const door of b.doors){
+            ctx.fillRect(bx + door.dx, surfaceY - 3, b.doorW, 3);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ---------- city layers (tall building silhouettes behind farms) ---------- */
+const cityDefs = [];
+
+function initCities(){
+  cityDefs.length = 0;
+  const configs = [
+    { period: 4000, factor: 0.12, baseYFrac: 0.72, terrainIdx: 0, hScale: 8,  count: 140, minH: 8,  maxH: 40, minW: 6,  maxW: 18, bodyColor: [69,77,98], windowAlpha: 0.12 },
+    { period: 3200, factor: 0.14, baseYFrac: 0.74, terrainIdx: 1, hScale: 10, count: 110, minH: 10, maxH: 55, minW: 8,  maxW: 22, bodyColor: [58,66,88], windowAlpha: 0.20 },
+    { period: 2600, factor: 0.16, baseYFrac: 0.76, terrainIdx: 2, hScale: 12, count: 90,  minH: 12, maxH: 70, minW: 10, maxW: 26, bodyColor: [46,54,77], windowAlpha: 0.30 },
+  ];
+  for (const cfg of configs){
+    const buildings = [];
+    const spacing = cfg.period / cfg.count;
+    // height envelope: fractal-like clustering with 2-3 downtown peaks
+    const peaks = 2 + Math.floor(Math.random() * 2);
+    const peakCenters = [];
+    for (let p = 0; p < peaks; p++) peakCenters.push(Math.random());
+    const peakWidths = peakCenters.map(() => 0.06 + Math.random() * 0.1);
+
+    for (let i = 0; i < cfg.count; i++){
+      const x = i * spacing + Math.random() * spacing * 0.5;
+      const xFrac = x / cfg.period;
+      // compute height envelope from peaks
+      let envelope = 0.3;
+      for (let p = 0; p < peaks; p++){
+        const dist = Math.abs(xFrac - peakCenters[p]);
+        const wrapped = Math.min(dist, 1 - dist);
+        envelope = Math.max(envelope, Math.exp(-(wrapped * wrapped) / (2 * peakWidths[p] * peakWidths[p])));
+      }
+      const w = cfg.minW + Math.random() * (cfg.maxW - cfg.minW);
+      let h = cfg.minH + (cfg.maxH - cfg.minH) * (0.2 + 0.8 * envelope) * (0.5 + Math.random() * 0.5);
+      if (Math.random() < 0.1 * envelope) h = h * 2 + Math.random() * 40;
+      const roofTypes = ['flat','flat','flat','pointed','antenna','stepped','dome'];
+      const roof = roofTypes[Math.floor(Math.random() * roofTypes.length)];
+      // per-building color tint
+      const cr = cfg.bodyColor[0] + Math.floor(Math.random() * 16 - 8);
+      const cg = cfg.bodyColor[1] + Math.floor(Math.random() * 16 - 8);
+      const cb = cfg.bodyColor[2] + Math.floor(Math.random() * 16 - 8);
+      const bColor = `rgb(${cr},${cg},${cb})`;
+      const wSize = 0.8 + Math.random() * 0.8;
+      const winDensity = 2 + Math.random() * 3;
+      const windowCols = Math.max(1, Math.floor(w / winDensity));
+      const windowRows = Math.max(1, Math.floor(h / (1.5 + Math.random() * 1.5)));
+      const wGapX = w / (windowCols + 1);
+      const wGapY = h / (windowRows + 1);
+      const darkChance = 0.15 + Math.random() * 0.4;
+      const wAlpha = cfg.windowAlpha * (0.6 + Math.random() * 0.8);
+      const windowColor = `rgba(255,216,110,${wAlpha.toFixed(2)})`;
+      const windows = [];
+      for (let wy = 1; wy <= windowRows; wy++){
+        for (let wx = 1; wx <= windowCols; wx++){
+          if (Math.random() < darkChance) continue;
+          windows.push({ dx: wx * wGapX - wSize / 2, dy: wy * wGapY - wSize / 2 });
+        }
+      }
+      buildings.push({ x, w, h, roof, windows, wSize, bColor, windowColor });
+    }
+    cityDefs.push({ ...cfg, buildings });
+  }
+}
+initCities();
+
+function drawCities(){
+  for (const layer of cityDefs){
+    const baseY = groundY * layer.baseYFrac;
+    const prof = cityTerrainProfiles[layer.terrainIdx];
+    const terrainCol = `rgb(${layer.bodyColor[0]},${layer.bodyColor[1]},${layer.bodyColor[2]})`;
+    drawTerrainLayer(terrainCol, prof, layer.period, layer.factor, baseY, layer.hScale);
+
+    const off = ((scroll * layer.factor) % layer.period + layer.period) % layer.period;
+    for (let rep = -off - layer.period; rep < W + layer.period; rep += layer.period){
+      for (const b of layer.buildings){
+        const bx = rep + b.x;
+        if (bx + b.w < -5 || bx > W + 5) continue;
+        const th = profileHeightAt(prof, b.x / layer.period) * layer.hScale;
+        const surfaceY = baseY - th;
+
+        ctx.fillStyle = b.bColor;
+        ctx.fillRect(bx, surfaceY - b.h, b.w, b.h + 1);
+
+        if (b.roof === 'pointed'){
+          ctx.beginPath();
+          ctx.moveTo(bx, surfaceY - b.h);
+          ctx.lineTo(bx + b.w / 2, surfaceY - b.h - b.w * 0.35);
+          ctx.lineTo(bx + b.w, surfaceY - b.h);
+          ctx.closePath();
+          ctx.fill();
+        } else if (b.roof === 'antenna'){
+          ctx.fillRect(bx + b.w / 2 - 1, surfaceY - b.h - 8, 2, 8);
+          ctx.fillStyle = 'rgba(255,60,60,0.6)';
+          ctx.beginPath();
+          ctx.arc(bx + b.w / 2, surfaceY - b.h - 8, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (b.roof === 'stepped'){
+          ctx.fillRect(bx + b.w * 0.2, surfaceY - b.h - 5, b.w * 0.6, 5);
+          ctx.fillRect(bx + b.w * 0.35, surfaceY - b.h - 9, b.w * 0.3, 4);
+        } else if (b.roof === 'dome'){
+          ctx.beginPath();
+          ctx.arc(bx + b.w / 2, surfaceY - b.h, b.w * 0.35, Math.PI, 0);
+          ctx.fill();
+        }
+
+        if (b.windows.length > 0){
+          ctx.fillStyle = b.windowColor;
+          for (const win of b.windows){
+            ctx.fillRect(bx + win.dx, surfaceY - b.h + win.dy, b.wSize, b.wSize);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ---------- terrain profile interpolation helper ---------- */
+function profileHeightAt(profile, xFrac){
+  const samples = profile.length - 1;
+  const t = Math.max(0, Math.min(1, xFrac)) * samples;
+  const i = Math.floor(t);
+  const f = t - i;
+  const h0 = Math.max(0, profile[Math.min(i, samples)]);
+  const h1 = Math.max(0, profile[Math.min(i + 1, samples)]);
+  return h0 + (h1 - h0) * f;
+}
+
+/* ---------- farm layers (rolling fields with barns, silos, fences) ---------- */
+const farmDefs = [];
+
+function initFarms(){
+  farmDefs.length = 0;
+  const configs = [
+    { period: 1800, factor: 0.34, baseYFrac: 0.88, profileIdx: 0, heightScale: 10, terrainColor: '#6e7e3e' },
+    { period: 1500, factor: 0.36, baseYFrac: 0.89, profileIdx: 1, heightScale: 11, terrainColor: '#6a7a3a' },
+    { period: 1300, factor: 0.38, baseYFrac: 0.90, profileIdx: 2, heightScale: 12, terrainColor: '#5e7234' },
+    { period: 1100, factor: 0.40, baseYFrac: 0.91, profileIdx: 3, heightScale: 10, terrainColor: '#5a7232' },
+  ];
+  for (const cfg of configs){
+    // barns and silos
+    const barnColors = ['#8a2222','#7a3020','#6a2828','#9a3018','#7e2018','#8a4028','#6e1a1a','#984030','#703228','#882a1a'];
+    const barnRoofColors = ['#6a1818','#5a2418','#4a1e1e','#7a2414','#5e1814','#6a3020','#4e1212','#783020','#582420','#6a2016'];
+    const structures = [];
+    const structCount = 3 + Math.floor(Math.random() * 4);
+    const structSpacing = cfg.period / (structCount + 1);
+    for (let i = 0; i < structCount; i++){
+      const x = (i + 1) * structSpacing + (Math.random() - 0.5) * structSpacing * 0.4;
+      const type = Math.random() < 0.5 ? 'barn' : 'silo';
+      const bci = Math.floor(Math.random() * barnColors.length);
+      structures.push({
+        x, type,
+        barnW: 16 + Math.random() * 18,
+        barnH: 10 + Math.random() * 14,
+        barnColor: barnColors[bci],
+        barnRoofColor: barnRoofColors[bci],
+        siloW: 4 + Math.random() * 5,
+        siloH: 14 + Math.random() * 16,
+      });
+    }
+    // fence posts
+    const posts = [];
+    const postSpacing = 16 + Math.random() * 6;
+    for (let x = 0; x < cfg.period; x += postSpacing){
+      posts.push({ x: x + Math.random() * 3 });
+    }
+    // farm features: crops, animals, equipment
+    const features = [];
+    const featureTypes = ['corn', 'soy', 'cows', 'horses', 'bales', 'irrigation'];
+    const featureCount = Math.floor(cfg.period / 60) + Math.floor(Math.random() * 8);
+    const fSpacing = cfg.period / featureCount;
+    for (let i = 0; i < featureCount; i++){
+      const x = i * fSpacing + Math.random() * fSpacing * 0.5 + 10;
+      const type = featureTypes[Math.floor(Math.random() * featureTypes.length)];
+      const feat = { x, type };
+
+      if (type === 'corn'){
+        feat.width = 25 + Math.random() * 30;
+        feat.stalks = [];
+        const cnt = 5 + Math.floor(Math.random() * 8);
+        for (let si = 0; si < cnt; si++){
+          feat.stalks.push({ dx: si * (feat.width / cnt) + Math.random() * 3, h: 4 + Math.random() * 3 });
+        }
+      } else if (type === 'soy'){
+        feat.width = 25 + Math.random() * 35;
+        feat.rows = 3 + Math.floor(Math.random() * 3);
+        feat.rowH = 2 + Math.random() * 2;
+      } else if (type === 'cows'){
+        feat.animals = [];
+        const cnt = 2 + Math.floor(Math.random() * 4);
+        for (let ai = 0; ai < cnt; ai++){
+          feat.animals.push({
+            dx: ai * (8 + Math.random() * 6),
+            color: Math.random() < 0.4 ? '#1a1a1a' : (Math.random() < 0.5 ? '#f0e8d8' : '#5a3a1a'),
+            flip: Math.random() < 0.5,
+          });
+        }
+      } else if (type === 'horses'){
+        feat.animals = [];
+        const cnt = 1 + Math.floor(Math.random() * 3);
+        for (let ai = 0; ai < cnt; ai++){
+          feat.animals.push({
+            dx: ai * (10 + Math.random() * 8),
+            color: ['#5a2a0a', '#8a5a2a', '#3a2a1a', '#c4a070'][Math.floor(Math.random() * 4)],
+            flip: Math.random() < 0.5,
+          });
+        }
+      } else if (type === 'bales'){
+        feat.bales = [];
+        const cnt = 2 + Math.floor(Math.random() * 4);
+        for (let bi = 0; bi < cnt; bi++){
+          feat.bales.push({ dx: bi * (8 + Math.random() * 5), r: 3 + Math.random() * 3 });
+        }
+      } else if (type === 'irrigation'){
+        feat.armLen = 40 + Math.random() * 50;
+        feat.angle = (Math.random() - 0.5) * 0.3;
+        feat.towers = Math.floor(feat.armLen / 15);
+      }
+      features.push(feat);
+    }
+    farmDefs.push({ ...cfg, structures, posts, features });
+  }
+}
+initFarms();
+
+function drawFarms(){
+  for (const layer of farmDefs){
+    const baseY = groundY * layer.baseYFrac;
+    const prof = farmProfiles[layer.profileIdx];
+    drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.heightScale);
+
+    const off = ((scroll * layer.factor) % layer.period + layer.period) % layer.period;
+    for (let rep = -off - layer.period; rep < W + layer.period; rep += layer.period){
+      // fence posts (terrain-following)
+      ctx.fillStyle = '#5a4a30';
+      for (const post of layer.posts){
+        const px = rep + post.x;
+        if (px < -3 || px > W + 3) continue;
+        const th = profileHeightAt(prof, post.x / layer.period) * layer.heightScale;
+        const surfaceY = baseY - th;
+        ctx.fillRect(px, surfaceY - 3, 1.5, 3);
+      }
+      // fence rails between posts
+      ctx.strokeStyle = '#5a4a30';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let pi = 0; pi < layer.posts.length - 1; pi++){
+        const p0 = layer.posts[pi], p1 = layer.posts[pi + 1];
+        const px0 = rep + p0.x, px1 = rep + p1.x;
+        if (px1 < -5 || px0 > W + 5) continue;
+        const h0 = profileHeightAt(prof, p0.x / layer.period) * layer.heightScale;
+        const h1 = profileHeightAt(prof, p1.x / layer.period) * layer.heightScale;
+        const sy0 = baseY - h0, sy1 = baseY - h1;
+        ctx.moveTo(px0, sy0 - 2.5);
+        ctx.lineTo(px1, sy1 - 2.5);
+        ctx.moveTo(px0, sy0 - 1);
+        ctx.lineTo(px1, sy1 - 1);
+      }
+      ctx.stroke();
+
+      // farm features (crops, animals, equipment)
+      for (const feat of layer.features){
+        const fx = rep + feat.x;
+        if (fx < -100 || fx > W + 100) continue;
+        const th = profileHeightAt(prof, feat.x / layer.period) * layer.heightScale;
+        const surfaceY = baseY - th;
+
+        if (feat.type === 'corn'){
+          for (const stalk of feat.stalks){
+            const sx = fx + stalk.dx;
+            ctx.fillStyle = '#6a8a28';
+            ctx.fillRect(sx, surfaceY - stalk.h, 1, stalk.h);
+            ctx.fillStyle = '#5a7a20';
+            ctx.fillRect(sx - 1, surfaceY - stalk.h * 0.6, 2, 1);
+            ctx.fillStyle = '#c8a830';
+            ctx.fillRect(sx + 0.5, surfaceY - stalk.h * 0.75, 1.5, 1.5);
+          }
+        } else if (feat.type === 'soy'){
+          ctx.fillStyle = '#3a6a28';
+          for (let ri = 0; ri < feat.rows; ri++){
+            ctx.fillRect(fx, surfaceY - feat.rowH - ri * 5, feat.width, feat.rowH);
+          }
+        } else if (feat.type === 'cows'){
+          for (const a of feat.animals){
+            const ax = fx + a.dx;
+            ctx.fillStyle = a.color;
+            ctx.fillRect(ax, surfaceY - 5, 7, 4);
+            ctx.fillRect(ax + (a.flip ? -2 : 7), surfaceY - 6, 2, 3);
+            ctx.fillRect(ax + 1, surfaceY - 1, 1, 2);
+            ctx.fillRect(ax + 5, surfaceY - 1, 1, 2);
+          }
+        } else if (feat.type === 'horses'){
+          for (const a of feat.animals){
+            const ax = fx + a.dx;
+            ctx.fillStyle = a.color;
+            ctx.fillRect(ax, surfaceY - 6, 8, 4);
+            if (a.flip){
+              ctx.fillRect(ax - 1, surfaceY - 9, 2, 4);
+              ctx.fillRect(ax - 3, surfaceY - 9, 3, 2);
+            } else {
+              ctx.fillRect(ax + 7, surfaceY - 9, 2, 4);
+              ctx.fillRect(ax + 8, surfaceY - 9, 3, 2);
+            }
+            ctx.fillRect(ax + 1, surfaceY - 2, 1, 3);
+            ctx.fillRect(ax + 6, surfaceY - 2, 1, 3);
+            ctx.fillRect(ax + (a.flip ? 8 : -1), surfaceY - 7, 1, 3);
+          }
+        } else if (feat.type === 'bales'){
+          for (const b of feat.bales){
+            const bx = fx + b.dx;
+            ctx.fillStyle = '#c4a44a';
+            ctx.beginPath();
+            ctx.arc(bx, surfaceY - b.r, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#d4b85a';
+            ctx.beginPath();
+            ctx.arc(bx - b.r * 0.2, surfaceY - b.r - b.r * 0.2, b.r * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (feat.type === 'irrigation'){
+          ctx.fillStyle = '#6a6a6a';
+          ctx.beginPath();
+          ctx.arc(fx, surfaceY - 3, 2, 0, Math.PI * 2);
+          ctx.fill();
+          const endX = fx + Math.cos(feat.angle) * feat.armLen;
+          const endY = surfaceY - 3 + Math.sin(feat.angle) * feat.armLen * 0.3;
+          ctx.strokeStyle = '#5a5a5a';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(fx, surfaceY - 3);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          ctx.fillStyle = '#4a4a4a';
+          for (let ti = 1; ti <= feat.towers; ti++){
+            const t = ti / (feat.towers + 1);
+            const tx = fx + (endX - fx) * t;
+            const ty = surfaceY - 3 + (endY - (surfaceY - 3)) * t;
+            ctx.fillRect(tx - 1, ty, 2, 4);
+            ctx.beginPath();
+            ctx.arc(tx, ty + 4, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // barns and silos
+      for (const s of layer.structures){
+        const sx = rep + s.x;
+        if (sx < -40 || sx > W + 40) continue;
+        const th = profileHeightAt(prof, s.x / layer.period) * layer.heightScale;
+        const surfaceY = baseY - th;
+
+        if (s.type === 'barn'){
+          ctx.fillStyle = s.barnColor;
+          ctx.fillRect(sx - s.barnW / 2, surfaceY - s.barnH, s.barnW, s.barnH);
+          ctx.fillStyle = s.barnRoofColor;
+          ctx.beginPath();
+          ctx.moveTo(sx - s.barnW / 2 - 2, surfaceY - s.barnH);
+          ctx.lineTo(sx, surfaceY - s.barnH - s.barnH * 0.45);
+          ctx.lineTo(sx + s.barnW / 2 + 2, surfaceY - s.barnH);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#4a1010';
+          ctx.fillRect(sx - 3, surfaceY - 7, 6, 7);
+        } else {
+          ctx.fillStyle = '#8a8a7a';
+          ctx.fillRect(sx - s.siloW / 2, surfaceY - s.siloH, s.siloW, s.siloH);
+          ctx.fillStyle = '#7a7a6a';
+          ctx.beginPath();
+          ctx.arc(sx, surfaceY - s.siloH, s.siloW / 2, Math.PI, 0);
+          ctx.fill();
+        }
+      }
+    }
+  }
 }
 
 /* ---------- background trees (distant fractal silhouettes on the near hill) ---------- */
-const BG_TREE_PERIOD = 2400;
+const BG_TREE_PERIOD = 8000;
 const bgTrees = [];
 
 function generateBgTree(rng){
@@ -657,17 +1614,17 @@ function generateBgTree(rng){
 
 function initBgTrees(){
   bgTrees.length = 0;
-  for (let i = 0; i < 20; i++){
+  for (let i = 0; i < 50; i++){
     const rng = () => Math.random();
-    const x = i * (BG_TREE_PERIOD / 20) + rng() * 60;
+    const x = i * (BG_TREE_PERIOD / 50) + rng() * 80;
     bgTrees.push({ x, ...generateBgTree(rng) });
   }
 }
 initBgTrees();
 
 function drawBgTrees(){
-  const factor = 0.40;
-  const baseY = groundY * 0.88;
+  const factor = 0.42;
+  const baseY = groundY * 0.92;
   const off = ((scroll * factor) % BG_TREE_PERIOD + BG_TREE_PERIOD) % BG_TREE_PERIOD;
 
   for (let rep = -off - BG_TREE_PERIOD; rep < W + BG_TREE_PERIOD; rep += BG_TREE_PERIOD){
@@ -707,14 +1664,14 @@ function drawBgTrees(){
 }
 
 /* ---------- mid-layer trees (between bg trees and foreground, scaled smaller) ---------- */
-const MID_TREE_PERIOD = 1800;
+const MID_TREE_PERIOD = 6000;
 const midTrees = [];
 
 function initMidTrees(){
   midTrees.length = 0;
-  for (let i = 0; i < 12; i++){
+  for (let i = 0; i < 35; i++){
     const rng = () => Math.random();
-    const x = i * (MID_TREE_PERIOD / 12) + rng() * 60;
+    const x = i * (MID_TREE_PERIOD / 35) + rng() * 80;
     const tree = generateBgTree(rng);
     // scale everything by 1.5x (bigger than bg but smaller than foreground)
     const scale = 1.3 + rng() * 0.4;
@@ -727,7 +1684,7 @@ initMidTrees();
 
 function drawMidTrees(){
   const factor = 0.55;
-  const baseY = groundY * 0.93;
+  const baseY = groundY * 0.95;
   const off = ((scroll * factor) % MID_TREE_PERIOD + MID_TREE_PERIOD) % MID_TREE_PERIOD;
 
   for (let rep = -off - MID_TREE_PERIOD; rep < W + MID_TREE_PERIOD; rep += MID_TREE_PERIOD){
@@ -766,8 +1723,8 @@ function drawMidTrees(){
 
 /* ---------- fractal tree generation (foreground) ---------- */
 
-const TREE_PERIOD = 4000;
-const TREE_COUNT  = 16;
+const TREE_PERIOD = 12000;
+const TREE_COUNT  = 40;
 
 /* Tree skeleton. `widthBias` (0-1) controls shape: 0 = tall/narrow, 1 = wide/spreading.
    Wide trees fork low with branches angled far out; narrow trees fork high and upward. */
@@ -792,7 +1749,7 @@ function generateTreeBranches(rng, startX, startY, angle, length, width, depth, 
 
   // taper: width at start vs end of this segment
   const endWidth = width * 0.65;
-  const color = depth < 1 ? '#4a2e12' : '#3a5a20';
+  const color = '#4a2e12';
 
   if (midCount > 0){
     const allPts = [{ x: startX, y: startY, t: 0 }, ...midPoints, { x: endX, y: endY, t: 1 }];
@@ -801,10 +1758,24 @@ function generateTreeBranches(rng, startX, startY, angle, length, width, depth, 
       const p0 = allPts[si], p1 = allPts[si + 1];
       const w1 = width + (endWidth - width) * p0.t;
       const w2 = width + (endWidth - width) * p1.t;
-      wood.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, w1, w2, color });
+      const bk = []; for (let bi = 0; bi < 5; bi++) bk.push((rng()-0.5)*w1*0.15, (rng()-0.5)*w1*0.12);
+      // bark grain: thin lines along trunk + knot marks
+      const grain = [];
+      const grainCount = Math.max(1, Math.floor(w1 / 3));
+      for (let gi = 0; gi < grainCount; gi++) grain.push((rng()-0.5)*0.7, rng()*0.15+0.05);
+      const knots = [];
+      if (rng() < 0.3){ knots.push({ t: 0.2+rng()*0.6, off: (rng()-0.5)*0.5, r: 1+rng()*2 }); }
+      wood.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, w1, w2, color, bark: bk, grain, knots });
     }
   } else {
-    wood.push({ x1: startX, y1: startY, x2: endX, y2: endY, w1: width, w2: endWidth, color });
+    const bk = []; for (let bi = 0; bi < 5; bi++) bk.push((rng()-0.5)*width*0.15, (rng()-0.5)*width*0.12);
+    const grain = [];
+    const grainCount = Math.max(2, Math.floor(width / 3));
+    for (let gi = 0; gi < grainCount; gi++) grain.push((rng()-0.5)*0.7, rng()*0.15+0.05);
+    const knots = [];
+    if (rng() < 0.4){ knots.push({ t: 0.2+rng()*0.6, off: (rng()-0.5)*0.5, r: 1.5+rng()*2.5 }); }
+    if (rng() < 0.15){ knots.push({ t: 0.1+rng()*0.8, off: (rng()-0.5)*0.5, r: 1+rng()*2 }); }
+    wood.push({ x1: startX, y1: startY, x2: endX, y2: endY, w1: width, w2: endWidth, color, bark: bk, grain, knots });
   }
 
   // spawn mid-segment child branches — width at fork point
@@ -872,20 +1843,96 @@ function generateFrond(seed, size, angle, g){
     const cx = Math.cos(angle) * size * 0.4 * t + (rng() - 0.5) * size * 0.7;
     const cy = Math.sin(angle) * size * 0.4 * t + (rng() - 0.5) * size * 0.7;
     const r = size * (0.35 + rng() * 0.25);
-    // expand each point into boundary samples (8 points around the circle)
     for (let a = 0; a < 8; a++){
       const ang = a * Math.PI * 0.25;
       raw.push({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r });
     }
   }
   const hull = convexHull(raw);
-  // also compute a smaller inner hull for highlight
-  const innerHull = hull.map(p => {
-    const cx = hull.reduce((s, h) => s + h.x, 0) / hull.length;
-    const cy = hull.reduce((s, h) => s + h.y, 0) / hull.length;
-    return { x: cx + (p.x - cx) * 0.5, y: cy + (p.y - cy) * 0.5 - size * 0.06 };
-  });
-  return { hull, innerHull, g };
+  const cenX = hull.reduce((s, p) => s + p.x, 0) / hull.length;
+  const cenY = hull.reduce((s, p) => s + p.y, 0) / hull.length;
+  const innerHull = hull.map(p => ({
+    x: cenX + (p.x - cenX) * 0.5,
+    y: cenY + (p.y - cenY) * 0.5 - size * 0.06,
+  }));
+  // leaf clusters: small circles placed along hull edge, pushed outward
+  const baseR = size * 0.12;
+  const leafCircles = [];
+  for (let i = 0; i < hull.length; i++){
+    const curr = hull[i];
+    const next = hull[(i + 1) % hull.length];
+    const dx = next.x - curr.x, dy = next.y - curr.y;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
+    const cnt = Math.max(2, Math.round(segLen / (baseR * 0.7)));
+    for (let n = 0; n < cnt; n++){
+      const t = (n + rng() * 0.5) / cnt;
+      const px = curr.x + dx * t, py = curr.y + dy * t;
+      const ex = px - cenX, ey = py - cenY;
+      const ed = Math.sqrt(ex * ex + ey * ey) || 1;
+      const len = baseR * (0.8 + rng() * 1.2);
+      const wid = len * (0.25 + rng() * 0.2);
+      const rot = Math.atan2(ey, ex) + (rng() - 0.5) * 1.2;
+      leafCircles.push({ x: px, y: py, len, wid, rot });
+    }
+  }
+  // gap cutouts: leaf shapes between edge leaves, pointing inward
+  const gapLeaves = [];
+  for (let i = 0; i < hull.length; i++){
+    const curr = hull[i];
+    const next = hull[(i + 1) % hull.length];
+    const dx = next.x - curr.x, dy = next.y - curr.y;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
+    const gCnt = Math.max(1, Math.round(segLen / (baseR * 0.9)));
+    for (let n = 0; n < gCnt; n++){
+      const t = (n + 0.3 + rng() * 0.4) / gCnt;
+      const px = curr.x + dx * t, py = curr.y + dy * t;
+      const ex = px - cenX, ey = py - cenY;
+      const gLen = baseR * (0.6 + rng() * 0.8);
+      const gWid = gLen * (0.2 + rng() * 0.15);
+      const gRot = Math.atan2(ey, ex) + Math.PI + (rng() - 0.5) * 0.8;
+      gapLeaves.push({ x: px, y: py, len: gLen, wid: gWid, rot: gRot });
+    }
+  }
+  // inner hull edge leaves
+  const innerBaseR = baseR * 0.5;
+  const innerLeaves = [];
+  const iCenX = innerHull.reduce((s, p) => s + p.x, 0) / innerHull.length;
+  const iCenY = innerHull.reduce((s, p) => s + p.y, 0) / innerHull.length;
+  for (let i = 0; i < innerHull.length; i++){
+    const curr = innerHull[i];
+    const next = innerHull[(i + 1) % innerHull.length];
+    const dx = next.x - curr.x, dy = next.y - curr.y;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
+    const cnt = Math.max(1, Math.round(segLen / (innerBaseR * 0.8)));
+    for (let n = 0; n < cnt; n++){
+      const t = (n + rng() * 0.5) / cnt;
+      const px = curr.x + dx * t, py = curr.y + dy * t;
+      const ex = px - iCenX, ey = py - iCenY;
+      const len = innerBaseR * (0.7 + rng() * 1.0);
+      const wid = len * (0.25 + rng() * 0.2);
+      const rot = Math.atan2(ey, ex) + (rng() - 0.5) * 1.2;
+      innerLeaves.push({ x: px, y: py, len, wid, rot });
+    }
+  }
+  // inner gap cutouts
+  const innerGapLeaves = [];
+  for (let i = 0; i < innerHull.length; i++){
+    const curr = innerHull[i];
+    const next = innerHull[(i + 1) % innerHull.length];
+    const dx = next.x - curr.x, dy = next.y - curr.y;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
+    const gCnt = Math.max(1, Math.round(segLen / (innerBaseR * 1.0)));
+    for (let n = 0; n < gCnt; n++){
+      const t = (n + 0.3 + rng() * 0.4) / gCnt;
+      const px = curr.x + dx * t, py = curr.y + dy * t;
+      const ex = px - iCenX, ey = py - iCenY;
+      const gLen = innerBaseR * (0.5 + rng() * 0.7);
+      const gWid = gLen * (0.2 + rng() * 0.15);
+      const gRot = Math.atan2(ey, ex) + Math.PI + (rng() - 0.5) * 0.8;
+      innerGapLeaves.push({ x: px, y: py, len: gLen, wid: gWid, rot: gRot });
+    }
+  }
+  return { hull, innerHull, g, leafCircles, gapLeaves, innerLeaves, innerGapLeaves, cenX, cenY };
 }
 
 const treeDefs = [];
@@ -942,7 +1989,7 @@ initMfgTrees();
 function drawMfgTrees(){
   const factor = 0.65;
   const off = ((scroll * factor) % MFG_TREE_PERIOD + MFG_TREE_PERIOD) % MFG_TREE_PERIOD;
-  const baseY = groundY * 0.96;
+  const baseY = groundY * 0.97;
 
   for (let rep = -off - MFG_TREE_PERIOD; rep < W + MFG_TREE_PERIOD; rep += MFG_TREE_PERIOD){
     for (const t of mfgTreeDefs){
@@ -971,7 +2018,8 @@ function drawMfgTrees(){
         if (oy < -150 || oy > H + 80 || ox < -150 || ox > W + 150) continue;
         const f = fr.frond, g = f.g, hull = f.hull;
         if (hull.length < 3) continue;
-        ctx.fillStyle = `rgb(${Math.round(18 + g * 0.1)},${g},${Math.round(18 + g * 0.08)})`;
+        const mr = Math.round(18 + g * 0.1), mgv = g, mb = Math.round(18 + g * 0.08);
+        ctx.fillStyle = `rgb(${mr},${mgv},${mb})`;
         ctx.beginPath();
         ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x)/2, oy + (hull[hull.length-1].y + hull[0].y)/2);
         for (let hi = 0; hi < hull.length; hi++){
@@ -980,6 +2028,92 @@ function drawMfgTrees(){
         }
         ctx.closePath();
         ctx.fill();
+        if (f.gapLeaves){
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x)/2, oy + (hull[hull.length-1].y + hull[0].y)/2);
+          for (let hi = 0; hi < hull.length; hi++){
+            const c = hull[hi], n = hull[(hi+1)%hull.length];
+            ctx.quadraticCurveTo(ox + c.x, oy + c.y, ox + (c.x+n.x)/2, oy + (c.y+n.y)/2);
+          }
+          ctx.clip();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.fillStyle = 'rgba(0,0,0,1)';
+          ctx.beginPath();
+          for (const gc of f.gapLeaves){
+            const lx = ox + gc.x, ly = oy + gc.y;
+            const cr2 = Math.cos(gc.rot), sr2 = Math.sin(gc.rot);
+            const hl = gc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + gc.wid * sr2, ly - gc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - gc.wid * sr2, ly + gc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+        if (f.leafCircles){
+          ctx.fillStyle = `rgb(${mr},${mgv},${mb})`;
+          ctx.beginPath();
+          for (const lc of f.leafCircles){
+            const lx = ox + lc.x, ly = oy + lc.y;
+            const cr2 = Math.cos(lc.rot), sr2 = Math.sin(lc.rot);
+            const hl = lc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + lc.wid * sr2, ly - lc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - lc.wid * sr2, ly + lc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+        }
+        // inner highlight + cutouts + leaves
+        const ih = f.innerHull;
+        if (ih && ih.length >= 3){
+          const igv = Math.min(255, g + 20);
+          ctx.fillStyle = `rgb(${Math.round(28 + g * 0.12)},${igv},${Math.round(28 + g * 0.08)})`;
+          ctx.beginPath();
+          ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x)/2, oy + (ih[ih.length-1].y + ih[0].y)/2);
+          for (let hi = 0; hi < ih.length; hi++){
+            const c = ih[hi], n = ih[(hi+1)%ih.length];
+            ctx.quadraticCurveTo(ox + c.x, oy + c.y, ox + (c.x+n.x)/2, oy + (c.y+n.y)/2);
+          }
+          ctx.closePath();
+          ctx.fill();
+          if (f.innerGapLeaves){
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x)/2, oy + (ih[ih.length-1].y + ih[0].y)/2);
+            for (let hi = 0; hi < ih.length; hi++){
+              const c = ih[hi], n = ih[(hi+1)%ih.length];
+              ctx.quadraticCurveTo(ox + c.x, oy + c.y, ox + (c.x+n.x)/2, oy + (c.y+n.y)/2);
+            }
+            ctx.clip();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0,0,0,1)';
+            ctx.beginPath();
+            for (const gc of f.innerGapLeaves){
+              const lx = ox + gc.x, ly = oy + gc.y;
+              const cr2 = Math.cos(gc.rot), sr2 = Math.sin(gc.rot);
+              const hl = gc.len / 2;
+              ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+              ctx.quadraticCurveTo(lx + gc.wid * sr2, ly - gc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+              ctx.quadraticCurveTo(lx - gc.wid * sr2, ly + gc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+            }
+            ctx.fill();
+            ctx.restore();
+          }
+          if (f.innerLeaves){
+            ctx.fillStyle = `rgb(${Math.round(28 + g * 0.12)},${igv},${Math.round(28 + g * 0.08)})`;
+            ctx.beginPath();
+            for (const lc of f.innerLeaves){
+              const lx = ox + lc.x, ly = oy + lc.y;
+              const cr2 = Math.cos(lc.rot), sr2 = Math.sin(lc.rot);
+              const hl = lc.len / 2;
+              ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+              ctx.quadraticCurveTo(lx + lc.wid * sr2, ly - lc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+              ctx.quadraticCurveTo(lx - lc.wid * sr2, ly + lc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+            }
+            ctx.fill();
+          }
+        }
       }
     }
   }
@@ -1017,12 +2151,75 @@ function drawTrees(){
         const hw2 = b.w2 / 2;
         ctx.fillStyle = b.color;
         ctx.beginPath();
-        ctx.moveTo(tx + b.x1 + px * hw1, sy1 + py * hw1);
-        ctx.lineTo(tx + b.x2 + px * hw2, sy2 + py * hw2);
-        ctx.lineTo(tx + b.x2 - px * hw2, sy2 - py * hw2);
-        ctx.lineTo(tx + b.x1 - px * hw1, sy1 - py * hw1);
+        const bk = b.bark;
+        const bkN = bk ? bk.length / 2 : 0;
+        if (bk && bkN >= 2){
+          // right edge with bark bumps
+          for (let bi = 0; bi <= bkN; bi++){
+            const t = bi / bkN;
+            const mx = tx + b.x1 + (b.x2 - b.x1) * t;
+            const my = sy1 + (sy2 - sy1) * t;
+            const mw = hw1 + (hw2 - hw1) * t + (bi > 0 && bi < bkN ? bk[bi * 2] : 0);
+            if (bi === 0) ctx.moveTo(mx + px * mw, my + py * mw);
+            else ctx.lineTo(mx + px * mw, my + py * mw);
+          }
+          // left edge in reverse with bark bumps
+          for (let bi = bkN; bi >= 0; bi--){
+            const t = bi / bkN;
+            const mx = tx + b.x1 + (b.x2 - b.x1) * t;
+            const my = sy1 + (sy2 - sy1) * t;
+            const mw = hw1 + (hw2 - hw1) * t + (bi > 0 && bi < bkN ? bk[bi * 2 + 1] : 0);
+            ctx.lineTo(mx - px * mw, my - py * mw);
+          }
+        } else {
+          ctx.moveTo(tx + b.x1 + px * hw1, sy1 + py * hw1);
+          ctx.lineTo(tx + b.x2 + px * hw2, sy2 + py * hw2);
+          ctx.lineTo(tx + b.x2 - px * hw2, sy2 - py * hw2);
+          ctx.lineTo(tx + b.x1 - px * hw1, sy1 - py * hw1);
+        }
         ctx.closePath();
         ctx.fill();
+        // bark grain lines
+        if (b.grain && b.grain.length >= 2){
+          ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          for (let gi = 0; gi < b.grain.length; gi += 2){
+            const gOff = b.grain[gi];
+            const gWob = b.grain[gi+1];
+            const mw1 = hw1 * gOff, mw2 = hw2 * gOff;
+            ctx.moveTo(tx + b.x1 + px * mw1, sy1 + py * mw1);
+            const midX = tx + b.x1 + (b.x2-b.x1)*0.5;
+            const midY = sy1 + (sy2-sy1)*0.5;
+            const midW = (hw1+hw2)*0.5*(gOff+gWob);
+            ctx.quadraticCurveTo(midX + px*midW, midY + py*midW, tx + b.x2 + px*mw2, sy2 + py*mw2);
+          }
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.beginPath();
+          for (let gi = 0; gi < b.grain.length; gi += 2){
+            const gOff = b.grain[gi] + 0.05;
+            const mw1 = hw1 * gOff, mw2 = hw2 * gOff;
+            ctx.moveTo(tx + b.x1 + px*mw1, sy1 + py*mw1);
+            ctx.lineTo(tx + b.x2 + px*mw2, sy2 + py*mw2);
+          }
+          ctx.stroke();
+        }
+        if (b.knots){
+          for (const k of b.knots){
+            const kx = tx + b.x1 + (b.x2-b.x1)*k.t;
+            const ky = sy1 + (sy2-sy1)*k.t;
+            const kw = hw1 + (hw2-hw1)*k.t;
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(kx + px*kw*k.off, ky + py*kw*k.off, k.r, k.r*0.6, Math.atan2(dy,dx), 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.beginPath();
+            ctx.ellipse(kx + px*kw*k.off, ky + py*kw*k.off, k.r*1.5, k.r, Math.atan2(dy,dx), 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
       }
 
       // canopy blobs — sorted back-to-front, color based on absolute y in tree
@@ -1043,29 +2240,106 @@ function drawTrees(){
         const gv = Math.min(255, g + lift);
         const b = Math.round(18 + g * 0.08 + lift * 0.3);
 
+        // hull fill
         ctx.fillStyle = `rgb(${r},${gv},${b})`;
         ctx.beginPath();
-        ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x) / 2, oy + (hull[hull.length-1].y + hull[0].y) / 2);
+        ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x)/2, oy + (hull[hull.length-1].y + hull[0].y)/2);
         for (let hi = 0; hi < hull.length; hi++){
-          const curr = hull[hi];
-          const next = hull[(hi + 1) % hull.length];
-          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x + next.x) / 2, oy + (curr.y + next.y) / 2);
+          const curr = hull[hi], next = hull[(hi+1)%hull.length];
+          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x+next.x)/2, oy + (curr.y+next.y)/2);
         }
         ctx.closePath();
         ctx.fill();
+        // gap cutouts — erase leaf shapes from hull edge
+        if (f.gapLeaves){
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(ox + (hull[hull.length-1].x + hull[0].x)/2, oy + (hull[hull.length-1].y + hull[0].y)/2);
+          for (let hi = 0; hi < hull.length; hi++){
+            const curr = hull[hi], next = hull[(hi+1)%hull.length];
+            ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x+next.x)/2, oy + (curr.y+next.y)/2);
+          }
+          ctx.clip();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.fillStyle = 'rgba(0,0,0,1)';
+          ctx.beginPath();
+          for (const gc of f.gapLeaves){
+            const lx = ox + gc.x, ly = oy + gc.y;
+            const cr2 = Math.cos(gc.rot), sr2 = Math.sin(gc.rot);
+            const hl = gc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + gc.wid * sr2, ly - gc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - gc.wid * sr2, ly + gc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+        // edge leaves
+        if (f.leafCircles){
+          ctx.fillStyle = `rgb(${r},${gv},${b})`;
+          ctx.beginPath();
+          for (const lc of f.leafCircles){
+            const lx = ox + lc.x, ly = oy + lc.y;
+            const cr2 = Math.cos(lc.rot), sr2 = Math.sin(lc.rot);
+            const hl = lc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + lc.wid * sr2, ly - lc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - lc.wid * sr2, ly + lc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+        }
 
-        // inner highlight blob — also shifts lighter for top fronds
+        // inner highlight blob
         const ih = f.innerHull;
-        ctx.fillStyle = `rgb(${Math.round(30 + g * 0.12 + lift * 0.5)},${Math.min(255, g + 22 + lift)},${30 + Math.round(lift * 0.3)})`;
+        const ir = Math.round(30 + g * 0.12 + lift * 0.5);
+        const igv = Math.min(255, g + 22 + lift);
+        const ib = 30 + Math.round(lift * 0.3);
+        ctx.fillStyle = `rgb(${ir},${igv},${ib})`;
         ctx.beginPath();
-        ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x) / 2, oy + (ih[ih.length-1].y + ih[0].y) / 2);
+        ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x)/2, oy + (ih[ih.length-1].y + ih[0].y)/2);
         for (let hi = 0; hi < ih.length; hi++){
-          const curr = ih[hi];
-          const next = ih[(hi + 1) % ih.length];
-          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x + next.x) / 2, oy + (curr.y + next.y) / 2);
+          const curr = ih[hi], next = ih[(hi+1)%ih.length];
+          ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x+next.x)/2, oy + (curr.y+next.y)/2);
         }
         ctx.closePath();
         ctx.fill();
+        // inner gap cutouts
+        if (f.innerGapLeaves){
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(ox + (ih[ih.length-1].x + ih[0].x)/2, oy + (ih[ih.length-1].y + ih[0].y)/2);
+          for (let hi = 0; hi < ih.length; hi++){
+            const curr = ih[hi], next = ih[(hi+1)%ih.length];
+            ctx.quadraticCurveTo(ox + curr.x, oy + curr.y, ox + (curr.x+next.x)/2, oy + (curr.y+next.y)/2);
+          }
+          ctx.clip();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.fillStyle = 'rgba(0,0,0,1)';
+          ctx.beginPath();
+          for (const gc of f.innerGapLeaves){
+            const lx = ox + gc.x, ly = oy + gc.y;
+            const cr2 = Math.cos(gc.rot), sr2 = Math.sin(gc.rot);
+            const hl = gc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + gc.wid * sr2, ly - gc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - gc.wid * sr2, ly + gc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+        // inner edge leaves
+        if (f.innerLeaves){
+          ctx.beginPath();
+          for (const lc of f.innerLeaves){
+            const lx = ox + lc.x, ly = oy + lc.y;
+            const cr2 = Math.cos(lc.rot), sr2 = Math.sin(lc.rot);
+            const hl = lc.len / 2;
+            ctx.moveTo(lx - hl * cr2, ly - hl * sr2);
+            ctx.quadraticCurveTo(lx + lc.wid * sr2, ly - lc.wid * cr2, lx + hl * cr2, ly + hl * sr2);
+            ctx.quadraticCurveTo(lx - lc.wid * sr2, ly + lc.wid * cr2, lx - hl * cr2, ly - hl * sr2);
+          }
+          ctx.fill();
+        }
       }
     }
   }
@@ -1176,8 +2450,9 @@ function drawKrystal(){
 
 /* ---------- loop ---------- */
 function update(dt){
-  // clouds always drift, independent of character
+  // clouds and airplanes always drift, independent of character
   cloudTime += dt;
+  updateAirplanes(dt);
 
   if (state === 'walk'){
     scroll += SPEED*dt;
@@ -1201,7 +2476,13 @@ function draw(){
   const sky = skyColors();
   drawSky(sky);
   drawClouds();
-  drawMountainsAndHills();
+  drawAirplanes(sky.night);
+  drawMountains();
+  drawHills();
+  drawCities();
+  drawIndustrial();
+  drawSuburbs();
+  drawFarms();
   drawBgTrees();
   drawMidTrees();
   drawGround();
