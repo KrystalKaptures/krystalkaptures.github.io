@@ -85,7 +85,7 @@
 
 <div id="overlay">
   <div id="topCard">
-    <img id="brandLogo" src="assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures logo">
+    <img id="brandLogo" src="assets/krystal-logo-transparent.png" alt="Krystal with a K logo">
     <p id="dayLabel"></p>
     <p id="wordLabel">loading...</p>
     <p id="subLabel"></p>
@@ -276,7 +276,7 @@ function rand(a,b){ return a + Math.random()*(b-a); }
 
 /* ---------- canvas setup (full viewport, fixed background) ---------- */
 const cv = document.getElementById('cv');
-let ctx = cv.getContext('2d');
+const ctx = cv.getContext('2d');
 const bubble = document.getElementById('bubble');
 const clockChip = document.getElementById('clockChip');
 let W = 0, H = 0, groundY = 0;
@@ -289,7 +289,6 @@ function resize(){
   ctx.imageSmoothingEnabled = false;
   groundY = H*0.82;
   positionBubble();
-  if (typeof layerCaches !== 'undefined' && layerCaches.length) rebuildCaches();
 }
 window.addEventListener('resize', resize);
 
@@ -946,10 +945,8 @@ function initSuburbs(){
 }
 initSuburbs();
 
-function drawSuburbs(onlyLi){
-  for (let _li = 0; _li < suburbDefs.length; _li++){
-    if (onlyLi !== undefined && _li !== onlyLi) continue;
-    const layer = suburbDefs[_li];
+function drawSuburbs(){
+  for (const layer of suburbDefs){
     const baseY = groundY * layer.baseYFrac;
     const prof = suburbTerrainProfiles[layer.terrainIdx];
     drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.hScale);
@@ -1239,10 +1236,8 @@ function initIndustrial(){
 }
 initIndustrial();
 
-function drawIndustrial(onlyLi){
-  for (let _li = 0; _li < industrialDefs.length; _li++){
-    if (onlyLi !== undefined && _li !== onlyLi) continue;
-    const layer = industrialDefs[_li];
+function drawIndustrial(){
+  for (const layer of industrialDefs){
     const baseY = groundY * layer.baseYFrac;
     const prof = industrialTerrainProfiles[layer.terrainIdx];
     drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.hScale);
@@ -1390,10 +1385,8 @@ function initCities(){
 }
 initCities();
 
-function drawCities(onlyLi){
-  for (let _li = 0; _li < cityDefs.length; _li++){
-    if (onlyLi !== undefined && _li !== onlyLi) continue;
-    const layer = cityDefs[_li];
+function drawCities(){
+  for (const layer of cityDefs){
     const baseY = groundY * layer.baseYFrac;
     const prof = cityTerrainProfiles[layer.terrainIdx];
     const terrainCol = `rgb(${layer.bodyColor[0]},${layer.bodyColor[1]},${layer.bodyColor[2]})`;
@@ -1551,10 +1544,8 @@ function initFarms(){
 }
 initFarms();
 
-function drawFarms(onlyLi){
-  for (let _li = 0; _li < farmDefs.length; _li++){
-    if (onlyLi !== undefined && _li !== onlyLi) continue;
-    const layer = farmDefs[_li];
+function drawFarms(){
+  for (const layer of farmDefs){
     const baseY = groundY * layer.baseYFrac;
     const prof = farmProfiles[layer.profileIdx];
     drawTerrainLayer(layer.terrainColor, prof, layer.period, layer.factor, baseY, layer.heightScale);
@@ -2626,88 +2617,23 @@ function update(dt){
   updateJets(dt);
 }
 
-/* ---------- layer cache system ---------- */
-const layerCaches = [];
-
-function cacheLayer(period, factor, renderFn){
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const c = document.createElement('canvas');
-  const lw = Math.ceil(period);
-  c.width = Math.round(lw * dpr);
-  c.height = Math.round(H * dpr);
-  const cctx = c.getContext('2d');
-  cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  cctx.imageSmoothingEnabled = false;
-  const savedCtx = ctx, savedW = W, savedScroll = scroll;
-  ctx = cctx;
-  W = lw;
-  scroll = 0;
-  renderFn();
-  ctx = savedCtx; W = savedW; scroll = savedScroll;
-  layerCaches.push({ canvas: c, period, factor, lw });
-  return layerCaches.length - 1;
-}
-
-function drawCached(idx){
-  const lc = layerCaches[idx];
-  if (!lc) return;
-  const off = ((scroll * lc.factor) % lc.period + lc.period) % lc.period;
-  for (let x = -off; x < W; x += lc.period){
-    ctx.drawImage(lc.canvas, 0, 0, lc.canvas.width, lc.canvas.height, x, 0, lc.lw, H);
-  }
-}
-
-// Cache slot indices, filled by rebuildCaches
-const C = {};
-
-function rebuildCaches(){
-  layerCaches.length = 0;
-  // Mountains (4 sub-layers)
-  C.mt0 = cacheLayer(1800, 0.01, () => drawTerrainLayer('#3a4d6a', mtProfiles[0], 1800, 0.01, groundY*0.52, 28));
-  C.mt1 = cacheLayer(1600, 0.03, () => drawTerrainLayer('#364968', mtProfiles[1], 1600, 0.03, groundY*0.56, 26));
-  C.mt2 = cacheLayer(1300, 0.05, () => drawTerrainLayer('#334a5e', mtProfiles[2], 1300, 0.05, groundY*0.60, 24));
-  C.mt3 = cacheLayer(1050, 0.07, () => drawTerrainLayer('#2e4050', mtProfiles[3], 1050, 0.07, groundY*0.64, 22));
-  // Hills (3 sub-layers)
-  C.hl0 = cacheLayer(900, 0.08, () => drawTerrainLayer('#2a5038', hillProfiles[0], 900, 0.08, groundY*0.66, 22));
-  C.hl1 = cacheLayer(800, 0.09, () => drawTerrainLayer('#275232', hillProfiles[1], 800, 0.09, groundY*0.68, 25));
-  C.hl2 = cacheLayer(700, 0.10, () => drawTerrainLayer('#255530', hillProfiles[2], 700, 0.10, groundY*0.70, 28));
-  // Cities (3 sub-layers)
-  for (let i = 0; i < cityDefs.length; i++)
-    C['ci'+i] = cacheLayer(cityDefs[i].period, cityDefs[i].factor, () => drawCities(i));
-  // Industrial (4 sub-layers)
-  for (let i = 0; i < industrialDefs.length; i++)
-    C['in'+i] = cacheLayer(industrialDefs[i].period, industrialDefs[i].factor, () => drawIndustrial(i));
-  // Suburbs (4 sub-layers)
-  for (let i = 0; i < suburbDefs.length; i++)
-    C['sb'+i] = cacheLayer(suburbDefs[i].period, suburbDefs[i].factor, () => drawSuburbs(i));
-  // Farms (4 sub-layers)
-  for (let i = 0; i < farmDefs.length; i++)
-    C['fm'+i] = cacheLayer(farmDefs[i].period, farmDefs[i].factor, () => drawFarms(i));
-  // Trees
-  C.bgT  = cacheLayer(BG_TREE_PERIOD, 0.42, drawBgTrees);
-  C.midT = cacheLayer(MID_TREE_PERIOD, 0.55, drawMidTrees);
-  C.mfgT = cacheLayer(MFG_TREE_PERIOD, 0.65, drawMfgTrees);
-  C.fgT  = cacheLayer(TREE_PERIOD, 0.85, drawTrees);
-}
-
 function draw(){
   const sky = skyColors();
   drawSky(sky);
   drawClouds();
   drawAirplanes(sky.night);
-  // cached layers — just blit pre-rendered strips
-  drawCached(C.mt0); drawCached(C.mt1); drawCached(C.mt2); drawCached(C.mt3);
-  drawCached(C.hl0); drawCached(C.hl1); drawCached(C.hl2);
-  for (let i = 0; i < cityDefs.length; i++) drawCached(C['ci'+i]);
-  for (let i = 0; i < industrialDefs.length; i++) drawCached(C['in'+i]);
-  for (let i = 0; i < suburbDefs.length; i++) drawCached(C['sb'+i]);
-  for (let i = 0; i < farmDefs.length; i++) drawCached(C['fm'+i]);
-  drawCached(C.bgT);
-  drawCached(C.midT);
+  drawMountains();
+  drawHills();
+  drawCities();
+  drawIndustrial();
+  drawSuburbs();
+  drawFarms();
+  drawBgTrees();
+  drawMidTrees();
   drawGround();
-  drawCached(C.mfgT);
+  drawMfgTrees();
   drawJets();
-  drawCached(C.fgT);
+  drawTrees();
   drawKrystal();
   drawForegroundGrass();
 }
@@ -2725,7 +2651,6 @@ function loop(now){
 }
 
 resize();
-rebuildCaches();
 checkFunTime();
 requestAnimationFrame(loop);
 
