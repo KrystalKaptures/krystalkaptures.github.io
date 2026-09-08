@@ -31,12 +31,11 @@
   #bubble::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
                   border:7px solid transparent; border-top-color:#fff; }
   #bubble.show{ opacity:1; }
-  #magicCloud{ position:fixed; z-index:4; left:0; top:0; width:92px; height:62px; padding:0;
-               border:0; background:transparent; font-size:64px; line-height:1; cursor:pointer;
-               filter:drop-shadow(0 7px 8px rgba(24,43,85,.22));
-               transform:translate(-50%,-50%); transition:filter .2s, scale .2s;
+  #magicCloud{ position:fixed; z-index:4; left:0; top:0; width:96px; height:68px; padding:0;
+               border:0; background:transparent; font-size:0; line-height:1; cursor:pointer;
+               transform:translate(-50%,-50%); transition:scale .2s;
                touch-action:manipulation; user-select:none; -webkit-user-select:none; }
-  #magicCloud:hover{ scale:1.08; filter:drop-shadow(0 8px 12px rgba(118,222,255,.55)); }
+  #magicCloud:hover{ scale:1.06; }
   #magicCloud:focus-visible{ outline:3px solid #fff7a8; outline-offset:5px; border-radius:50%; }
   #magicCloud:active{ scale:.96; }
   #magicCloud::after{ content:attr(data-hint); position:absolute; left:50%; top:100%;
@@ -46,7 +45,7 @@
                       opacity:0; transition:opacity .2s; pointer-events:none; }
   #magicCloud:hover::after, #magicCloud:focus-visible::after{ opacity:1; }
   #magicCloud.travelling{ cursor:wait; animation:cloudGlow .65s ease-in-out infinite alternate; }
-  @keyframes cloudGlow{ to{ filter:drop-shadow(0 8px 15px rgba(255,247,168,.85)); } }
+  @keyframes cloudGlow{ to{ scale:1.07; } }
   #debugPanel{ position:fixed; bottom:8px; left:8px; z-index:5; background:rgba(0,0,0,.55); padding:5px 7px;
                border-radius:8px; display:flex; gap:6px; align-items:center; }
   #debugPanel.hide{ display:none; }
@@ -327,7 +326,7 @@ const ROUTINE_POOL   = ['think','point','nod','shrug','surprised'];
 function loadImg(src){ const im = new Image(); im.src = src; return im; }
 const walkImg = loadImg(WALK_SRC);
 const exprImgs = {};
-[...new Set([...CELEBRATE_POOL, ...ROUTINE_POOL])].forEach(n => exprImgs[n] = loadImg(EXPR_DIR + n + '.png'));
+[...new Set([...CELEBRATE_POOL, ...ROUTINE_POOL, 'sit'])].forEach(n => exprImgs[n] = loadImg(EXPR_DIR + n + '.png'));
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function rand(a,b){ return a + Math.random()*(b-a); }
@@ -357,9 +356,10 @@ function resize(){
     cloudRide.riderFeetY = groundY+10;
   } else if (cloudRide.phase === 'up'){
     const perch = headlinePerch();
+    const parked = parkedCloudPosition(perch);
     cloudRide.riderFeetY = perch.feetY;
-    cloudRide.cloudX = Math.min(W-55, perch.right+42);
-    cloudRide.cloudY = perch.feetY+20;
+    cloudRide.cloudX = parked.x;
+    cloudRide.cloudY = parked.y;
   }
   positionMagicCloud();
   positionBubble();
@@ -395,6 +395,8 @@ const cloudRide = {
   startCloudY: 0,
   startRiderX: 0,
   startRiderY: 0,
+  perchElapsed: 0,
+  sitting: false,
 };
 
 function easeInOut(t){ return t < .5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
@@ -405,6 +407,9 @@ function headlinePerch(){
     right: Math.min(W - 36, r.right - 12),
     feetY: Math.max(115, r.top + 4),
   };
+}
+function parkedCloudPosition(perch){
+  return { x: Math.min(W-55, perch.right+46), y: Math.max(78, perch.feetY-64) };
 }
 function restingCloudPosition(){
   return { x: Math.min(W - 62, Math.max(W*.70, W*feetXFrac + 120)), y: Math.max(92, H*.24) };
@@ -426,6 +431,7 @@ function beginCloudRide(direction){
   cloudRide.startCloudY = cloudRide.cloudY;
   cloudRide.startRiderX = cloudRide.riderX || W*feetXFrac;
   cloudRide.startRiderY = cloudRide.riderFeetY || groundY + 10;
+  if (direction === 'rising') cloudRide.sitting = false;
   bubble.classList.remove('show');
   setCloudControls();
 }
@@ -443,8 +449,9 @@ function updateCloudRide(dt){
   const perch = headlinePerch();
   const groundX = W*feetXFrac;
   const groundFeetY = groundY+10;
-  const upCloudX = Math.min(W-55, perch.right+42);
-  const upCloudY = perch.feetY+20;
+  const parked = parkedCloudPosition(perch);
+  const upCloudX = parked.x;
+  const upCloudY = parked.y;
 
   if (cloudRide.phase === 'ground'){
     const resting = restingCloudPosition();
@@ -454,9 +461,11 @@ function updateCloudRide(dt){
     cloudRide.riderFeetY = groundFeetY;
   } else if (cloudRide.phase === 'up'){
     const span = Math.max(22, perch.right-perch.left);
-    const travel = (Math.sin(cloudTime*.65)+1)/2;
-    cloudRide.riderX = perch.left + span*travel;
+    cloudRide.perchElapsed += dt;
+    const walkProgress = Math.min(1, cloudRide.perchElapsed/5.4);
+    cloudRide.riderX = perch.left + span*walkProgress;
     cloudRide.riderFeetY = perch.feetY;
+    cloudRide.sitting = walkProgress >= 1;
     cloudRide.cloudX = upCloudX + Math.sin(cloudTime*.9)*5;
     cloudRide.cloudY = upCloudY + Math.sin(cloudTime*1.4)*3;
   } else {
@@ -473,25 +482,34 @@ function updateCloudRide(dt){
         cloudRide.riderFeetY = groundFeetY;
       } else {
         const p = easeInOut((raw-pickupEnd)/(1-pickupEnd));
-        cloudRide.cloudX = groundX + (upCloudX-groundX)*p;
-        cloudRide.cloudY = (groundFeetY+20) + (upCloudY-(groundFeetY+20))*p;
         cloudRide.riderX = groundX + (perch.left-groundX)*p;
         cloudRide.riderFeetY = groundFeetY + (perch.feetY-groundFeetY)*p;
+        cloudRide.cloudX = cloudRide.riderX;
+        cloudRide.cloudY = cloudRide.riderFeetY+20;
       }
       if (raw >= 1){
         cloudRide.phase = 'up';
+        cloudRide.perchElapsed = 0;
+        cloudRide.sitting = false;
         spawnSparkle(cloudRide.riderX, perch.feetY-18, '#fff7a8');
         showToast(cloudRide.riderX, perch.feetY-38, '☁️ Sky-high!');
         setCloudControls();
       }
     } else if (cloudRide.phase === 'lowering'){
-      const dropEnd = .72;
-      if (raw < dropEnd){
-        const p = easeInOut(raw/dropEnd);
+      const boardEnd = .22;
+      const dropEnd = .82;
+      if (raw < boardEnd){
+        const p = easeInOut(raw/boardEnd);
+        cloudRide.riderX = cloudRide.startRiderX;
+        cloudRide.riderFeetY = cloudRide.startRiderY;
+        cloudRide.cloudX = cloudRide.startCloudX + (cloudRide.startRiderX-cloudRide.startCloudX)*p;
+        cloudRide.cloudY = cloudRide.startCloudY + ((cloudRide.startRiderY+20)-cloudRide.startCloudY)*p;
+      } else if (raw < dropEnd){
+        const p = easeInOut((raw-boardEnd)/(dropEnd-boardEnd));
         cloudRide.riderX = cloudRide.startRiderX + (groundX-cloudRide.startRiderX)*p;
         cloudRide.riderFeetY = cloudRide.startRiderY + (groundFeetY-cloudRide.startRiderY)*p;
-        cloudRide.cloudX = cloudRide.startCloudX + (groundX-cloudRide.startCloudX)*p;
-        cloudRide.cloudY = cloudRide.startCloudY + ((groundFeetY+20)-cloudRide.startCloudY)*p;
+        cloudRide.cloudX = cloudRide.riderX;
+        cloudRide.cloudY = cloudRide.riderFeetY+20;
       } else {
         const resting = restingCloudPosition();
         const p = easeInOut((raw-dropEnd)/(1-dropEnd));
@@ -502,6 +520,7 @@ function updateCloudRide(dt){
       }
       if (raw >= 1){
         cloudRide.phase = 'ground';
+        cloudRide.sitting = false;
         spawnSparkle(groundX, groundFeetY-30, '#dff6ff');
         setCloudControls();
       }
@@ -1141,13 +1160,38 @@ function drawForegroundGrass(){
 }
 
 /* ---------- Krystal ---------- */
+function drawMagicCloud(){
+  const interactive = magicCloud.matches(':hover') || magicCloud.matches(':focus-visible');
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${interactive ? 70 : 64}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+  ctx.shadowColor = cloudRide.phase === 'rising' || cloudRide.phase === 'lowering'
+    ? 'rgba(255,247,168,.9)'
+    : 'rgba(72,142,205,.45)';
+  ctx.shadowBlur = interactive ? 18 : 10;
+  ctx.fillText('☁️', cloudRide.cloudX, cloudRide.cloudY);
+  ctx.restore();
+}
+
 function drawKrystal(){
   const feetX = cloudRide.riderX || W*feetXFrac;
   const feetY = cloudRide.riderFeetY || groundY+10;
   const dispH = dispHeight();
+  const isPerched = cloudRide.phase === 'up' && cloudRide.sitting;
   const bob = state==='walk' ? Math.abs(Math.sin(scroll*0.045))*3 : 0;
 
-  if (state === 'walk'){
+  if (isPerched){
+    const img = exprImgs.sit;
+    if (img && img.complete && img.naturalWidth){
+      const fw = img.naturalWidth/EXPR_COLS, fh = img.naturalHeight;
+      const dispW = dispH*(fw/fh);
+      const foot = EXPR_FOOT*dispH;
+      const sitFrame = Math.floor(cloudTime*4)%EXPR_COLS;
+      ctx.drawImage(img, sitFrame*fw, 0, fw, fh,
+                    feetX-dispW/2, feetY-dispH+foot, dispW, dispH);
+    }
+  } else if (state === 'walk'){
     if (walkImg.complete && walkImg.naturalWidth){
       const fw = walkImg.naturalWidth/WALK_COLS, fh = walkImg.naturalHeight/WALK_ROWS;
       const dispW = dispH*(fw/fh);
@@ -1215,6 +1259,7 @@ function draw(sky){
   drawBellTower();
   drawGround();
   drawFireflies();
+  drawMagicCloud();
   drawKrystal();
   drawButterflies();
   drawForegroundGrass();
