@@ -322,11 +322,12 @@ const WALK_COLS = 4, WALK_ROWS = 4, WALK_ROW_RIGHT = 2, WALK_FOOT = 0.045;
 const EXPR_COLS = 4, EXPR_FOOT = 0.078;
 const CELEBRATE_POOL = ['cheer','laugh','wave','highfive'];
 const ROUTINE_POOL   = ['think','point','nod','shrug','surprised'];
+const SKY_EMOTE_POOL = ['wave','cheer','point','shrug','nod','look','surprised'];
 
 function loadImg(src){ const im = new Image(); im.src = src; return im; }
 const walkImg = loadImg(WALK_SRC);
 const exprImgs = {};
-[...new Set([...CELEBRATE_POOL, ...ROUTINE_POOL, 'sit'])].forEach(n => exprImgs[n] = loadImg(EXPR_DIR + n + '.png'));
+[...new Set([...CELEBRATE_POOL, ...ROUTINE_POOL, ...SKY_EMOTE_POOL])].forEach(n => exprImgs[n] = loadImg(EXPR_DIR + n + '.png'));
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function rand(a,b){ return a + Math.random()*(b-a); }
@@ -336,7 +337,6 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const bubble = document.getElementById('bubble');
 const magicCloud = document.getElementById('magicCloud');
-const wordLabel = document.getElementById('wordLabel');
 const clockChip = document.getElementById('clockChip');
 const debugClock = document.getElementById('debugClock');
 let W = 0, H = 0, groundY = 0;
@@ -355,11 +355,11 @@ function resize(){
     cloudRide.riderX = W*feetXFrac;
     cloudRide.riderFeetY = groundY+10;
   } else if (cloudRide.phase === 'up'){
-    const perch = headlinePerch();
-    const parked = parkedCloudPosition(perch);
+    const perch = skyPerch();
+    cloudRide.riderX = perch.x;
     cloudRide.riderFeetY = perch.feetY;
-    cloudRide.cloudX = parked.x;
-    cloudRide.cloudY = parked.y;
+    cloudRide.cloudX = perch.x;
+    cloudRide.cloudY = perch.feetY+20;
   }
   positionMagicCloud();
   positionBubble();
@@ -395,21 +395,16 @@ const cloudRide = {
   startCloudY: 0,
   startRiderX: 0,
   startRiderY: 0,
-  perchElapsed: 0,
-  sitting: false,
+  skyEmoteElapsed: 0,
+  skyEmote: 'wave',
 };
 
 function easeInOut(t){ return t < .5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
-function headlinePerch(){
-  const r = wordLabel.getBoundingClientRect();
+function skyPerch(){
   return {
-    left: Math.max(36, r.left + 12),
-    right: Math.min(W - 36, r.right - 12),
-    feetY: Math.max(115, r.top + 4),
+    x: Math.min(W-64, Math.max(64, W*.78)),
+    feetY: Math.min(groundY-dispHeight()*.55, Math.max(250, H*.46)),
   };
-}
-function parkedCloudPosition(perch){
-  return { x: Math.min(W-55, perch.right+46), y: Math.max(78, perch.feetY-64) };
 }
 function restingCloudPosition(){
   return { x: Math.min(W - 62, Math.max(W*.70, W*feetXFrac + 120)), y: Math.max(92, H*.24) };
@@ -431,7 +426,7 @@ function beginCloudRide(direction){
   cloudRide.startCloudY = cloudRide.cloudY;
   cloudRide.startRiderX = cloudRide.riderX || W*feetXFrac;
   cloudRide.startRiderY = cloudRide.riderFeetY || groundY + 10;
-  if (direction === 'rising') cloudRide.sitting = false;
+  if (direction === 'rising') cloudRide.skyEmote = pick(SKY_EMOTE_POOL);
   bubble.classList.remove('show');
   setCloudControls();
 }
@@ -446,12 +441,9 @@ function positionMagicCloud(){
 }
 
 function updateCloudRide(dt){
-  const perch = headlinePerch();
+  const perch = skyPerch();
   const groundX = W*feetXFrac;
   const groundFeetY = groundY+10;
-  const parked = parkedCloudPosition(perch);
-  const upCloudX = parked.x;
-  const upCloudY = parked.y;
 
   if (cloudRide.phase === 'ground'){
     const resting = restingCloudPosition();
@@ -460,14 +452,17 @@ function updateCloudRide(dt){
     cloudRide.riderX = groundX;
     cloudRide.riderFeetY = groundFeetY;
   } else if (cloudRide.phase === 'up'){
-    const span = Math.max(22, perch.right-perch.left);
-    cloudRide.perchElapsed += dt;
-    const walkProgress = Math.min(1, cloudRide.perchElapsed/5.4);
-    cloudRide.riderX = perch.left + span*walkProgress;
-    cloudRide.riderFeetY = perch.feetY;
-    cloudRide.sitting = walkProgress >= 1;
-    cloudRide.cloudX = upCloudX + Math.sin(cloudTime*.9)*5;
-    cloudRide.cloudY = upCloudY + Math.sin(cloudTime*1.4)*3;
+    cloudRide.skyEmoteElapsed += dt;
+    if (cloudRide.skyEmoteElapsed >= 2.8){
+      const choices = SKY_EMOTE_POOL.filter(name => name !== cloudRide.skyEmote);
+      cloudRide.skyEmote = pick(choices);
+      cloudRide.skyEmoteElapsed = 0;
+    }
+    const floatY = Math.sin(cloudTime*1.4)*3;
+    cloudRide.riderX = perch.x;
+    cloudRide.riderFeetY = perch.feetY+floatY;
+    cloudRide.cloudX = perch.x;
+    cloudRide.cloudY = perch.feetY+20+floatY;
   } else {
     cloudRide.elapsed += dt;
     const raw = Math.min(1, cloudRide.elapsed/cloudRide.duration);
@@ -482,30 +477,23 @@ function updateCloudRide(dt){
         cloudRide.riderFeetY = groundFeetY;
       } else {
         const p = easeInOut((raw-pickupEnd)/(1-pickupEnd));
-        cloudRide.riderX = groundX + (perch.left-groundX)*p;
+        cloudRide.riderX = groundX + (perch.x-groundX)*p;
         cloudRide.riderFeetY = groundFeetY + (perch.feetY-groundFeetY)*p;
         cloudRide.cloudX = cloudRide.riderX;
         cloudRide.cloudY = cloudRide.riderFeetY+20;
       }
       if (raw >= 1){
         cloudRide.phase = 'up';
-        cloudRide.perchElapsed = 0;
-        cloudRide.sitting = false;
+        cloudRide.skyEmoteElapsed = 0;
+        cloudRide.skyEmote = pick(SKY_EMOTE_POOL);
         spawnSparkle(cloudRide.riderX, perch.feetY-18, '#fff7a8');
         showToast(cloudRide.riderX, perch.feetY-38, '☁️ Sky-high!');
         setCloudControls();
       }
     } else if (cloudRide.phase === 'lowering'){
-      const boardEnd = .22;
       const dropEnd = .82;
-      if (raw < boardEnd){
-        const p = easeInOut(raw/boardEnd);
-        cloudRide.riderX = cloudRide.startRiderX;
-        cloudRide.riderFeetY = cloudRide.startRiderY;
-        cloudRide.cloudX = cloudRide.startCloudX + (cloudRide.startRiderX-cloudRide.startCloudX)*p;
-        cloudRide.cloudY = cloudRide.startCloudY + ((cloudRide.startRiderY+20)-cloudRide.startCloudY)*p;
-      } else if (raw < dropEnd){
-        const p = easeInOut((raw-boardEnd)/(dropEnd-boardEnd));
+      if (raw < dropEnd){
+        const p = easeInOut(raw/dropEnd);
         cloudRide.riderX = cloudRide.startRiderX + (groundX-cloudRide.startRiderX)*p;
         cloudRide.riderFeetY = cloudRide.startRiderY + (groundFeetY-cloudRide.startRiderY)*p;
         cloudRide.cloudX = cloudRide.riderX;
@@ -520,7 +508,6 @@ function updateCloudRide(dt){
       }
       if (raw >= 1){
         cloudRide.phase = 'ground';
-        cloudRide.sitting = false;
         spawnSparkle(groundX, groundFeetY-30, '#dff6ff');
         setCloudControls();
       }
@@ -1178,17 +1165,17 @@ function drawKrystal(){
   const feetX = cloudRide.riderX || W*feetXFrac;
   const feetY = cloudRide.riderFeetY || groundY+10;
   const dispH = dispHeight();
-  const isPerched = cloudRide.phase === 'up' && cloudRide.sitting;
+  const isSkyHigh = cloudRide.phase === 'up';
   const bob = state==='walk' ? Math.abs(Math.sin(scroll*0.045))*3 : 0;
 
-  if (isPerched){
-    const img = exprImgs.sit;
+  if (isSkyHigh){
+    const img = exprImgs[cloudRide.skyEmote];
     if (img && img.complete && img.naturalWidth){
       const fw = img.naturalWidth/EXPR_COLS, fh = img.naturalHeight;
       const dispW = dispH*(fw/fh);
       const foot = EXPR_FOOT*dispH;
-      const sitFrame = Math.floor(cloudTime*4)%EXPR_COLS;
-      ctx.drawImage(img, sitFrame*fw, 0, fw, fh,
+      const skyFrame = Math.floor(cloudRide.skyEmoteElapsed*EXPR_FPS)%EXPR_COLS;
+      ctx.drawImage(img, skyFrame*fw, 0, fw, fh,
                     feetX-dispW/2, feetY-dispH+foot, dispW, dispH);
     }
   } else if (state === 'walk'){
