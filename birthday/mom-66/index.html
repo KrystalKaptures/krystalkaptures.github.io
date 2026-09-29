@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10243f">
+  <meta name="theme-color" content="#32154f">
   <meta name="description" content="A blooming birthday garden, made with love for Mom's 66th birthday.">
   <title>Happy 66th Birthday, Mom</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,11 +12,11 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2310243f'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='20'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E">
   <style>
     :root {
-      --night: #09182b;
-      --blue: #102a49;
-      --ink: #173255;
+      --night: #1a0d2b;
+      --blue: #3b205b;
+      --ink: #462363;
       --cream: #fffaf0;
-      --paper: rgba(255, 252, 245, .9);
+      --paper: rgba(249, 242, 255, .96);
       --gold: #f6c96a;
       --rose: #f28ca4;
       --leaf: #72b58c;
@@ -33,9 +33,9 @@
       color: var(--ink);
       font-family: "DM Sans", system-ui, sans-serif;
       background:
-        radial-gradient(circle at 20% 10%, rgba(116, 185, 255, .22), transparent 30rem),
-        radial-gradient(circle at 82% 26%, rgba(242, 140, 164, .18), transparent 28rem),
-        linear-gradient(155deg, var(--night), var(--blue) 62%, #214666);
+        radial-gradient(circle at 20% 10%, rgba(190, 136, 255, .3), transparent 30rem),
+        radial-gradient(circle at 82% 26%, rgba(221, 158, 244, .2), transparent 28rem),
+        linear-gradient(155deg, var(--night), var(--blue) 62%, #643c82);
       overflow-x: hidden;
     }
 
@@ -87,7 +87,7 @@
 
     .eyebrow {
       margin: 0 0 10px;
-      color: #59728d;
+      color: #79618d;
       font-size: .78rem;
       font-weight: 600;
       letter-spacing: .22em;
@@ -104,12 +104,12 @@
       letter-spacing: -.035em;
     }
 
-    h1 em { color: #b74767; font-weight: 400; }
+    h1 em { color: #8743a6; font-weight: 400; }
 
     .dedication {
       max-width: 590px;
       margin: 18px auto 0;
-      color: #536a82;
+      color: #6c567d;
       font-size: clamp(1rem, 2.4vw, 1.18rem);
       line-height: 1.65;
     }
@@ -128,8 +128,8 @@
       width: 300px;
       height: 300px;
       border-radius: 50%;
-      background: radial-gradient(circle at 42% 36%, #fffef7, #fff4ca 68%, #f5c862);
-      box-shadow: 0 0 60px rgba(246, 201, 106, .27);
+      background: radial-gradient(circle at 42% 36%, #fffaff, #ead4ff 68%, #bd8be5);
+      box-shadow: 0 0 60px rgba(176, 113, 226, .27);
       transform: translateX(-50%);
       opacity: .72;
     }
@@ -188,7 +188,7 @@
 
     .flower.mom .blossom {
       font-size: clamp(4.7rem, 12vw, 7rem);
-      filter: drop-shadow(0 0 18px rgba(246,201,106,.65));
+      filter: hue-rotate(285deg) drop-shadow(0 0 18px rgba(184,130,230,.65));
     }
 
     .label {
@@ -197,7 +197,7 @@
       padding: 5px 10px;
       border: 1px solid rgba(23,50,85,.1);
       border-radius: 999px;
-      color: #34516e;
+      color: #604079;
       background: rgba(255,255,255,.72);
       box-shadow: 0 4px 16px rgba(23,50,85,.08);
       font-size: .78rem;
@@ -206,7 +206,7 @@
     }
 
     .flower.mom { z-index: 3; }
-    .flower.mom .label { color: #973e5a; background: #fff3f5; }
+    .flower.mom .label { color: #713d91; background: #f4e7ff; }
 
     .ground {
       position: absolute;
@@ -231,7 +231,7 @@
     .message blockquote {
       max-width: 680px;
       margin: 0 auto 24px;
-      color: #244564;
+      color: #503067;
       font-family: "DM Serif Display", Georgia, serif;
       font-size: clamp(1.35rem, 3.2vw, 2rem);
       line-height: 1.35;
@@ -249,7 +249,7 @@
       transition: transform .2s ease, background .2s ease;
     }
 
-    .replay:hover { background: #294d72; transform: translateY(-2px); }
+    .replay:hover { background: #744392; transform: translateY(-2px); }
     .replay:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
     .petal {
@@ -311,28 +311,28 @@
           <span class="label">Mom · Our beginning</span>
         </div>
         <div class="flower" style="--x: 26%; --y: 188px; --delay: 1.75s; --order: 1">
-          <span class="blossom" role="img" aria-label="My flower">🌷</span>
-          <span class="label">Me</span>
+          <span class="blossom" role="img" aria-label="Krystal's flower">🌷</span>
+          <span class="label">Krystal</span>
         </div>
         <div class="flower" style="--x: 12%; --y: 100px; --delay: 2.35s; --order: 2">
-          <span class="blossom" role="img" aria-label="My sister's flower">🌸</span>
-          <span class="label">My Sister</span>
+          <span class="blossom" role="img" aria-label="Tiffany's flower">🌸</span>
+          <span class="label">Tiffany</span>
         </div>
         <div class="flower" style="--x: 38%; --y: 300px; --delay: 2.95s; --order: 3">
-          <span class="blossom" role="img" aria-label="First grandchild's flower">🌼</span>
-          <span class="label">Grandchild One</span>
+          <span class="blossom" role="img" aria-label="Luna's flower">🌼</span>
+          <span class="label">Luna</span>
         </div>
         <div class="flower" style="--x: 62%; --y: 300px; --delay: 3.55s; --order: 4">
-          <span class="blossom" role="img" aria-label="Second grandchild's flower">🌻</span>
-          <span class="label">Grandchild Two</span>
+          <span class="blossom" role="img" aria-label="Wade's flower">🌻</span>
+          <span class="label">Wade</span>
         </div>
         <div class="flower" style="--x: 74%; --y: 188px; --delay: 4.15s; --order: 5">
-          <span class="blossom" role="img" aria-label="Third grandchild's flower">🪻</span>
-          <span class="label">Grandchild Three</span>
+          <span class="blossom" role="img" aria-label="Luke's flower">🪻</span>
+          <span class="label">Luke</span>
         </div>
         <div class="flower" style="--x: 88%; --y: 100px; --delay: 4.75s; --order: 6">
-          <span class="blossom" role="img" aria-label="Fourth grandchild's flower">🌹</span>
-          <span class="label">Grandchild Four</span>
+          <span class="blossom" role="img" aria-label="William's flower">🌹</span>
+          <span class="label">William</span>
         </div>
 
         <div class="ground" aria-hidden="true"></div>
