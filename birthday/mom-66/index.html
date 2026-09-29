@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10243f">
+  <meta name="description" content="A blooming birthday garden, made with love for Mom's 66th birthday.">
+  <title>Happy 66th Birthday, Mom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2310243f'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='20'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --night: #09182b;
+      --blue: #102a49;
+      --ink: #173255;
+      --cream: #fffaf0;
+      --paper: rgba(255, 252, 245, .9);
+      --gold: #f6c96a;
+      --rose: #f28ca4;
+      --leaf: #72b58c;
+      --leaf-dark: #3d7d61;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(116, 185, 255, .22), transparent 30rem),
+        radial-gradient(circle at 82% 26%, rgba(242, 140, 164, .18), transparent 28rem),
+        linear-gradient(155deg, var(--night), var(--blue) 62%, #214666);
+      overflow-x: hidden;
+    }
+
+    button { font: inherit; }
+
+    .stars,
+    .stars::before,
+    .stars::after {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(246,201,106,.65) 0 1px, transparent 1.5px);
+      background-position: 14% 20%, 72% 34%;
+      background-size: 110px 130px, 170px 160px;
+      opacity: .36;
+    }
+
+    .stars::before { transform: translate(47px, 31px); opacity: .55; }
+    .stars::after { transform: translate(12px, 78px); opacity: .25; }
+
+    main {
+      position: relative;
+      width: min(1080px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: clamp(24px, 5vw, 56px) 0;
+    }
+
+    .card {
+      position: relative;
+      min-height: calc(100vh - clamp(48px, 10vw, 112px));
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.44);
+      border-radius: clamp(24px, 5vw, 44px);
+      background:
+        linear-gradient(rgba(255,255,255,.02), rgba(255,255,255,.02)),
+        var(--paper);
+      box-shadow: 0 28px 80px rgba(3, 14, 31, .42);
+    }
+
+    .intro {
+      position: relative;
+      z-index: 5;
+      padding: clamp(34px, 7vw, 72px) 20px 10px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #59728d;
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0 auto;
+      font-family: "DM Serif Display", Georgia, serif;
+      font-size: clamp(2.55rem, 8vw, 5.6rem);
+      font-weight: 400;
+      line-height: .96;
+      letter-spacing: -.035em;
+    }
+
+    h1 em { color: #b74767; font-weight: 400; }
+
+    .dedication {
+      max-width: 590px;
+      margin: 18px auto 0;
+      color: #536a82;
+      font-size: clamp(1rem, 2.4vw, 1.18rem);
+      line-height: 1.65;
+    }
+
+    .garden {
+      position: relative;
+      min-height: 560px;
+      margin-top: -12px;
+      isolation: isolate;
+    }
+
+    .moon {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 42% 36%, #fffef7, #fff4ca 68%, #f5c862);
+      box-shadow: 0 0 60px rgba(246, 201, 106, .27);
+      transform: translateX(-50%);
+      opacity: .72;
+    }
+
+    .branch {
+      position: absolute;
+      z-index: 0;
+      left: 50%;
+      bottom: 68px;
+      width: var(--w);
+      height: 3px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--leaf-dark), var(--leaf));
+      transform: rotate(var(--r));
+      transform-origin: left center;
+      scale: 0 1;
+      transition: scale 1.05s cubic-bezier(.2,.8,.2,1) var(--delay);
+      opacity: .78;
+    }
+
+    .branch.left { transform-origin: right center; translate: -100% 0; }
+    .is-blooming .branch { scale: 1 1; }
+
+    .flower {
+      position: absolute;
+      z-index: 2;
+      left: var(--x);
+      bottom: var(--y);
+      width: 116px;
+      margin-left: -58px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(24px) scale(.18) rotate(-8deg);
+      filter: blur(3px);
+      transition:
+        opacity .55s ease var(--delay),
+        transform 1.1s cubic-bezier(.18,.9,.25,1.35) var(--delay),
+        filter .65s ease var(--delay);
+    }
+
+    .is-blooming .flower {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotate(0);
+      filter: blur(0);
+    }
+
+    .blossom {
+      display: block;
+      font-size: clamp(3.4rem, 9vw, 5.6rem);
+      line-height: 1;
+      transform-origin: center 82%;
+      animation: sway 4.5s ease-in-out infinite alternate;
+      animation-delay: calc(var(--order) * -.43s);
+      filter: drop-shadow(0 10px 12px rgba(23,50,85,.14));
+    }
+
+    .flower.mom .blossom {
+      font-size: clamp(4.7rem, 12vw, 7rem);
+      filter: drop-shadow(0 0 18px rgba(246,201,106,.65));
+    }
+
+    .label {
+      display: inline-block;
+      margin-top: 3px;
+      padding: 5px 10px;
+      border: 1px solid rgba(23,50,85,.1);
+      border-radius: 999px;
+      color: #34516e;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 4px 16px rgba(23,50,85,.08);
+      font-size: .78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .flower.mom { z-index: 3; }
+    .flower.mom .label { color: #973e5a; background: #fff3f5; }
+
+    .ground {
+      position: absolute;
+      z-index: 1;
+      right: -6%;
+      bottom: -75px;
+      left: -6%;
+      height: 180px;
+      border-radius: 50% 50% 0 0;
+      background: linear-gradient(#83bf93, #477d68);
+      box-shadow: inset 0 15px 30px rgba(255,255,255,.2);
+    }
+
+    .message {
+      position: relative;
+      z-index: 5;
+      margin: -28px auto 0;
+      padding: 0 24px 42px;
+      text-align: center;
+    }
+
+    .message blockquote {
+      max-width: 680px;
+      margin: 0 auto 24px;
+      color: #244564;
+      font-family: "DM Serif Display", Georgia, serif;
+      font-size: clamp(1.35rem, 3.2vw, 2rem);
+      line-height: 1.35;
+    }
+
+    .replay {
+      min-height: 48px;
+      padding: 11px 19px;
+      border: 0;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--ink);
+      box-shadow: 0 8px 20px rgba(23,50,85,.2);
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .replay:hover { background: #294d72; transform: translateY(-2px); }
+    .replay:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+    .petal {
+      position: fixed;
+      z-index: 20;
+      top: -30px;
+      pointer-events: none;
+      animation: fall linear forwards;
+    }
+
+    @keyframes sway {
+      from { rotate: -3deg; translate: -1px 0; }
+      to { rotate: 3deg; translate: 1px -3px; }
+    }
+
+    @keyframes fall {
+      to { translate: var(--drift) 110vh; rotate: 540deg; opacity: .15; }
+    }
+
+    @media (max-width: 720px) {
+      main { width: min(100% - 14px, 1080px); padding: 7px 0; }
+      .card { min-height: calc(100vh - 14px); border-radius: 24px; }
+      .intro { padding-top: 38px; }
+      .garden { min-height: 600px; margin-top: 0; }
+      .moon { top: 100px; width: 220px; height: 220px; }
+      .flower { width: 88px; margin-left: -44px; }
+      .label { font-size: .68rem; padding: 4px 7px; }
+      .message { margin-top: -42px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
+      .petal { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+  <main>
+    <article class="card" aria-labelledby="birthday-title">
+      <header class="intro">
+        <p class="eyebrow">Sixty-six years of love</p>
+        <h1 id="birthday-title">Happy Birthday, <em>Mom</em></h1>
+        <p class="dedication">Every beautiful thing in this little garden began with you.</p>
+      </header>
+
+      <section class="garden" aria-label="A family garden blooming from Mom">
+        <div class="moon" aria-hidden="true"></div>
+
+        <span class="branch left" style="--w: 28%; --r: 155deg; --delay: 1.5s" aria-hidden="true"></span>
+        <span class="branch left" style="--w: 38%; --r: 168deg; --delay: 2.1s" aria-hidden="true"></span>
+        <span class="branch left" style="--w: 45%; --r: 177deg; --delay: 2.7s" aria-hidden="true"></span>
+        <span class="branch" style="--w: 28%; --r: 25deg; --delay: 3.3s" aria-hidden="true"></span>
+        <span class="branch" style="--w: 38%; --r: 12deg; --delay: 3.9s" aria-hidden="true"></span>
+        <span class="branch" style="--w: 45%; --r: 3deg; --delay: 4.5s" aria-hidden="true"></span>
+
+        <div class="flower mom" style="--x: 50%; --y: 48px; --delay: .45s; --order: 0">
+          <span class="blossom" role="img" aria-label="Mom's flower">🌺</span>
+          <span class="label">Mom · Our beginning</span>
+        </div>
+        <div class="flower" style="--x: 26%; --y: 188px; --delay: 1.75s; --order: 1">
+          <span class="blossom" role="img" aria-label="My flower">🌷</span>
+          <span class="label">Me</span>
+        </div>
+        <div class="flower" style="--x: 12%; --y: 100px; --delay: 2.35s; --order: 2">
+          <span class="blossom" role="img" aria-label="My sister's flower">🌸</span>
+          <span class="label">My Sister</span>
+        </div>
+        <div class="flower" style="--x: 38%; --y: 300px; --delay: 2.95s; --order: 3">
+          <span class="blossom" role="img" aria-label="First grandchild's flower">🌼</span>
+          <span class="label">Grandchild One</span>
+        </div>
+        <div class="flower" style="--x: 62%; --y: 300px; --delay: 3.55s; --order: 4">
+          <span class="blossom" role="img" aria-label="Second grandchild's flower">🌻</span>
+          <span class="label">Grandchild Two</span>
+        </div>
+        <div class="flower" style="--x: 74%; --y: 188px; --delay: 4.15s; --order: 5">
+          <span class="blossom" role="img" aria-label="Third grandchild's flower">🪻</span>
+          <span class="label">Grandchild Three</span>
+        </div>
+        <div class="flower" style="--x: 88%; --y: 100px; --delay: 4.75s; --order: 6">
+          <span class="blossom" role="img" aria-label="Fourth grandchild's flower">🌹</span>
+          <span class="label">Grandchild Four</span>
+        </div>
+
+        <div class="ground" aria-hidden="true"></div>
+      </section>
+
+      <footer class="message">
+        <blockquote>“Because you bloomed, we are all here—growing in the love you planted.”</blockquote>
+        <button class="replay" type="button">Watch us bloom again ✦</button>
+      </footer>
+    </article>
+  </main>
+
+  <script>
+    const garden = document.querySelector('.garden');
+    const replayButton = document.querySelector('.replay');
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function scatterPetals() {
+      if (reduceMotion) return;
+      const petals = ['🌸', '·', '✦'];
+      for (let i = 0; i < 18; i += 1) {
+        const petal = document.createElement('span');
+        petal.className = 'petal';
+        petal.textContent = petals[i % petals.length];
+        petal.style.left = `${Math.random() * 100}vw`;
+        petal.style.fontSize = `${10 + Math.random() * 10}px`;
+        petal.style.setProperty('--drift', `${-90 + Math.random() * 180}px`);
+        petal.style.animationDuration = `${5 + Math.random() * 4}s`;
+        petal.style.animationDelay = `${Math.random() * 2}s`;
+        document.body.appendChild(petal);
+        petal.addEventListener('animationend', () => petal.remove());
+      }
+    }
+
+    function bloom() {
+      garden.classList.remove('is-blooming');
+      void garden.offsetWidth;
+      garden.classList.add('is-blooming');
+      window.setTimeout(scatterPetals, reduceMotion ? 0 : 4200);
+    }
+
+    replayButton.addEventListener('click', bloom);
+    window.addEventListener('load', () => window.setTimeout(bloom, reduceMotion ? 0 : 350));
+  </script>
+</body>
+</html>
