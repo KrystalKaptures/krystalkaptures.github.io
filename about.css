@@ -217,6 +217,10 @@ h1.motto {
   font-size: clamp(3.3rem, 6.4vw, 5.6rem);
 }
 
+h1.motto span {
+  display: block;
+}
+
 .hero-copy > p:not(.eyebrow) {
   max-width: 650px;
   color: var(--muted);
