@@ -121,14 +121,16 @@
   const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const DAY_PREFIXES = ["s", "m", "t", "w", "th", "f", "s"];
   const DATAMUSE_URL = "https://api.datamuse.com/words";
+  const HISTORY_KEY = "krystal-daily-word-history-v1";
   const BLOCKED_WORDS = new Set([
     "false", "fatal", "feared", "feeble", "filthy", "flaky", "flimsy", "foolish", "frantic", "frightening", "frigid",
     "meaningless", "mediocre", "mindless", "miserable", "moody", "morbid", "mournful", "muddy", "mushy",
     "scared", "selfish", "severe", "shabby", "shady", "shallow", "shameless", "shocking", "sinful", "slice", "sloppy",
     "smug", "spiteful", "stale", "stern", "sticky", "stormy", "stubborn", "stuck", "suspicious",
-    "tacky", "tantamount", "tapped", "tasteless", "taxing", "tempered", "tense", "tenured", "terrible", "terrifying",
+    "tacky", "tantamount", "tapped", "tasteless", "taxing", "temperamental", "tempered", "tense", "tenured", "terrible", "terrifying",
     "taxable", "taxed", "technical", "timed", "tired", "tolerable", "tortured", "toward", "toxic", "treacherous",
-    "treated", "tried", "trimmed", "trying", "tuned", "turned",
+    "toothed", "tormented", "tormenting", "tortuous", "totaled", "tottering", "touchy",
+    "treated", "tried", "trifling", "trimmed", "trying", "tuned", "turned",
     "thick", "thinned", "third", "thoroughbred", "tight", "tipped", "topped", "total",
     "wrong", "worst", "wasted", "weak", "weary", "weird", "wicked", "worried", "worthless", "wretched"
   ]);
@@ -144,12 +146,40 @@
     };
   }
 
+  function chooseWithoutRecentRepeats(choices, dayIndex) {
+    let history = {};
+    try {
+      history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "{}") || {};
+    } catch (error) {
+      history = {};
+    }
+
+    const recent = Array.isArray(history[dayIndex]) ? history[dayIndex] : [];
+    const available = choices.filter(function (choice) {
+      return recent.indexOf(choice[0]) === -1;
+    });
+    const pool = available.length ? available : choices;
+    const choice = pool[Math.floor(Math.random() * pool.length)];
+    const index = choices.indexOf(choice);
+
+    history[dayIndex] = [choice[0]].concat(recent.filter(function (word) {
+      return word !== choice[0];
+    })).slice(0, 5);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (error) {
+      // Private browsing or a locked-down file preview may deny storage.
+    }
+
+    return { choice: choice, index: index };
+  }
+
   function getFallbackWord(date) {
     const chosenDate = date || new Date();
     const dayIndex = chosenDate.getDay();
     const choices = WORDS_BY_DAY[dayIndex];
-    const index = Math.floor(Math.random() * choices.length);
-    return makeWord(choices[index], dayIndex, index, choices.length, "curated offline list");
+    const selected = chooseWithoutRecentRepeats(choices, dayIndex);
+    return makeWord(selected.choice, dayIndex, selected.index, choices.length, "curated offline list");
   }
 
   function adjectiveDefinition(entry) {
@@ -175,17 +205,37 @@
   function loadDailyWord(date) {
     const chosenDate = date || new Date();
     const dayIndex = chosenDate.getDay();
-    const params = new URLSearchParams({
+    const commonParams = {
       ml: "good",
       sp: DAY_PREFIXES[dayIndex] + "*",
       md: "dpf",
       max: "1000"
-    });
+    };
+    const discoveryParams = {
+      sp: DAY_PREFIXES[dayIndex] + "*",
+      topics: "delight,kindness,wonder,nature,magic,joy",
+      md: "dpf",
+      max: "1000"
+    };
 
-    return fetch(DATAMUSE_URL + "?" + params.toString())
-      .then(function (response) {
+    function fetchWords(params) {
+      const query = new URLSearchParams(params);
+      return fetch(DATAMUSE_URL + "?" + query.toString()).then(function (response) {
         if (!response.ok) throw new Error("Datamuse returned " + response.status);
         return response.json();
+      });
+    }
+
+    return Promise.all([fetchWords(commonParams), fetchWords(discoveryParams)])
+      .then(function (resultSets) {
+        const seen = new Set();
+        const entries = resultSets[0].concat(resultSets[1]).filter(function (entry) {
+          if (!entry || seen.has(entry.word)) return false;
+          seen.add(entry.word);
+          return true;
+        });
+
+        return entries;
       })
       .then(function (entries) {
         const choices = entries
@@ -202,18 +252,15 @@
               adjectiveDefinition(entry).length > 0 &&
               adjectiveDefinition(entry).length <= 180;
           })
-          // Keep to the well-ranked end of the live result set, then remove a
-          // few technically-correct-but-not-fun matches.
-          .slice(0, 40)
           .filter(function (entry) { return !BLOCKED_WORDS.has(entry.word); })
-          .slice(0, 20)
+          .slice(0, 36)
           .map(function (entry) {
             return [entry.word, adjectiveDefinition(entry)];
           });
 
         if (choices.length === 0) throw new Error("No defined adjectives returned");
-        const index = Math.floor(Math.random() * choices.length);
-        return makeWord(choices[index], dayIndex, index, choices.length, "Datamuse");
+        const selected = chooseWithoutRecentRepeats(choices, dayIndex);
+        return makeWord(selected.choice, dayIndex, selected.index, choices.length, "Datamuse");
       })
       .catch(function (error) {
         console.warn("Using the offline daily-word list:", error);
