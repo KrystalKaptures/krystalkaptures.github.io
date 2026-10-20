@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Meet Krystal — lover of games, data, wordplay, and the ever-unfolding digital world.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="About Krystal | Krystal Kaptures">
+  <meta property="og:description" content="Games, data, wordplay, and a little everyday magic.">
+  <meta property="og:image" content="assets/twitch-branding/krystal-kaptures-profile-8bit-512.png">
+  <meta name="theme-color" content="#081329">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="about.css">
+  <title>About Krystal | Krystal Kaptures</title>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <span class="star star-one">✦</span>
+    <span class="star star-two">✧</span>
+    <span class="star star-three">✦</span>
+    <span class="star star-four">·</span>
+  </div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Krystal Kaptures home">
+      <img src="assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="about.html" aria-current="page">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="about-title">
+      <div class="portrait-wrap">
+        <div class="portrait-glow"></div>
+        <img class="portrait" src="assets/twitch-branding/krystal-kaptures-profile-8bit-512.png" alt="Pixel art portrait of Krystal wearing a headset, surrounded by glowing crystals and a little blue bird">
+        <span class="status"><span aria-hidden="true"></span> currently curious</span>
+      </div>
+
+      <div class="hero-copy">
+        <h1 class="motto" id="about-title">Always exploring, <span>always in play.</span></h1>
+        <p class="lede">I love games, data, and watching—and playing in—the digital world as it unfolds.</p>
+        <p>I’ve spent years dipping my toes into its endless abyss and following curiosity wherever it wandered. I’m still learning and still swimming—finding new ways to play in the day-to-day as I go.</p>
+        <div class="interest-list" aria-label="A few things Krystal likes">
+          <span>🎮 gaming</span>
+          <span>📊 data</span>
+          <span>🌐 internet rabbit holes</span>
+          <span>✦ everyday play</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="story" aria-labelledby="story-title">
+      <div class="section-heading">
+        <p class="eyebrow">A few save files</p>
+        <h2 id="story-title">Things in my universe</h2>
+      </div>
+
+      <div class="project-grid">
+        <article class="project-card fun-card">
+          <span class="card-icon" aria-hidden="true">⏱</span>
+          <p class="card-kicker">A tiny celebration</p>
+          <h3>FunTimes</h3>
+          <p>I notice the satisfying little patterns hiding in the clock—1:11, 12:34, and all their friends. FunTimes turns those passing moments into reasons to pause and celebrate.</p>
+          <a href="klock/">Catch a FunTime <span aria-hidden="true">→</span></a>
+        </article>
+
+        <article class="project-card words-card">
+          <span class="card-icon" aria-hidden="true">Aa</span>
+          <p class="card-kicker">A playful phrase a day</p>
+          <h3>Word of the Day</h3>
+          <p>I love alliteration, wordplay, and finding small ways to play in the day-to-day. Each morning gets a fresh adjective—a tiny invitation to notice language and carry a little delight along.</p>
+          <a href="day/index.html">Find today’s word <span aria-hidden="true">→</span></a>
+        </article>
+
+        <article class="project-card play-card">
+          <span class="card-icon" aria-hidden="true">✦</span>
+          <p class="card-kicker">Made to be explored</p>
+          <h3>Small digital worlds</h3>
+          <p>From pixel adventures to odd little tools, I like building playful corners of the internet where useful things can still have personality—and surprises are always welcome.</p>
+          <a href="birthday/8-3.html">Go adventuring <span aria-hidden="true">→</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="manifesto" aria-label="Krystal's creative philosophy">
+      <div class="manifesto-mark" aria-hidden="true">KK</div>
+      <div>
+        <p class="eyebrow">The short version</p>
+        <blockquote>“Make it work. Make it lovely. Leave room for a little magic.”</blockquote>
+        <p>I’m always learning, always tinkering, and probably one oddly satisfying detail away from starting another project.</p>
+      </div>
+      <button class="magic-button" type="button" aria-label="Release a little magic">release a little magic <span aria-hidden="true">✦</span></button>
+    </section>
+  </main>
+
+  <footer>
+    <p>Made with curiosity, pixels, and probably a FunTime.</p>
+    <div>
+      <a href="https://www.instagram.com/krystalkaptures/">Instagram</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://www.twitch.tv/krystalkaptures">Twitch</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
+    </div>
+  </footer>
+
+  <script>
+    const magicButton = document.querySelector('.magic-button');
+
+    magicButton.addEventListener('click', () => {
+      const rect = magicButton.getBoundingClientRect();
+      const colors = ['#79e6ff', '#b79cff', '#fff3a6', '#ff9bd2'];
+
+      for (let i = 0; i < 12; i += 1) {
+        const sparkle = document.createElement('span');
+        sparkle.className = 'button-sparkle';
+        sparkle.textContent = i % 3 === 0 ? '✦' : '·';
+        sparkle.style.left = `${rect.left + rect.width / 2}px`;
+        sparkle.style.top = `${rect.top + rect.height / 2 + window.scrollY}px`;
+        sparkle.style.setProperty('--x', `${(Math.random() - 0.5) * 190}px`);
+        sparkle.style.setProperty('--y', `${-35 - Math.random() * 110}px`);
+        sparkle.style.color = colors[i % colors.length];
+        document.body.appendChild(sparkle);
+        sparkle.addEventListener('animationend', () => sparkle.remove());
+      }
+    });
+  </script>
+</body>
+</html>
