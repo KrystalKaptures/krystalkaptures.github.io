@@ -121,7 +121,7 @@
   const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const DAY_PREFIXES = ["s", "m", "t", "w", "th", "f", "s"];
   const DATAMUSE_URL = "https://api.datamuse.com/words";
-  const HISTORY_KEY = "krystal-daily-word-history-v1";
+  const HISTORY_KEY = "krystal-daily-word-rotation-v2";
   const BLOCKED_WORDS = new Set([
     "false", "fatal", "feared", "feeble", "filthy", "flaky", "flimsy", "foolish", "frantic", "frightening", "frigid",
     "meaningless", "mediocre", "mindless", "miserable", "moody", "morbid", "mournful", "muddy", "mushy",
@@ -146,7 +146,7 @@
     };
   }
 
-  function chooseWithoutRecentRepeats(choices, dayIndex) {
+  function chooseFromRotation(choices, dayIndex) {
     let history = {};
     try {
       history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "{}") || {};
@@ -154,17 +154,26 @@
       history = {};
     }
 
-    const recent = Array.isArray(history[dayIndex]) ? history[dayIndex] : [];
-    const available = choices.filter(function (choice) {
-      return recent.indexOf(choice[0]) === -1;
+    let used = Array.isArray(history[dayIndex]) ? history[dayIndex] : [];
+    used = used.filter(function (word) {
+      return choices.some(function (choice) { return choice[0] === word; });
     });
-    const pool = available.length ? available : choices;
-    const choice = pool[Math.floor(Math.random() * pool.length)];
+
+    let available = choices.filter(function (choice) {
+      return used.indexOf(choice[0]) === -1;
+    });
+    if (!available.length) {
+      const lastWord = used[0];
+      used = [];
+      available = choices.length > 1
+        ? choices.filter(function (choice) { return choice[0] !== lastWord; })
+        : choices;
+    }
+
+    const choice = available[Math.floor(Math.random() * available.length)];
     const index = choices.indexOf(choice);
 
-    history[dayIndex] = [choice[0]].concat(recent.filter(function (word) {
-      return word !== choice[0];
-    })).slice(0, 5);
+    history[dayIndex] = [choice[0]].concat(used);
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     } catch (error) {
@@ -178,7 +187,7 @@
     const chosenDate = date || new Date();
     const dayIndex = chosenDate.getDay();
     const choices = WORDS_BY_DAY[dayIndex];
-    const selected = chooseWithoutRecentRepeats(choices, dayIndex);
+    const selected = chooseFromRotation(choices, dayIndex);
     return makeWord(selected.choice, dayIndex, selected.index, choices.length, "curated offline list");
   }
 
@@ -259,7 +268,7 @@
           });
 
         if (choices.length === 0) throw new Error("No defined adjectives returned");
-        const selected = chooseWithoutRecentRepeats(choices, dayIndex);
+        const selected = chooseFromRotation(choices, dayIndex);
         return makeWord(selected.choice, dayIndex, selected.index, choices.length, "Datamuse");
       })
       .catch(function (error) {
