@@ -217,6 +217,10 @@ h1.motto {
   font-size: clamp(3.3rem, 6.4vw, 5.6rem);
 }
 
+h1.motto span {
+  display: block;
+}
+
 .hero-copy > p:not(.eyebrow) {
   max-width: 650px;
   color: var(--muted);
@@ -368,6 +372,80 @@ h3 {
   color: #d5a7ff;
 }
 
+.arting {
+  position: relative;
+  margin: 16px auto 28px;
+  padding: clamp(34px, 6vw, 68px);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: clamp(42px, 7vw, 90px);
+  border: 1px solid rgba(206, 180, 255, 0.22);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(196, 117, 255, 0.2), transparent 22rem),
+    linear-gradient(140deg, rgba(37, 30, 77, 0.82), rgba(9, 22, 47, 0.92));
+}
+
+.arting::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: repeating-linear-gradient(0deg, transparent 0 29px, rgba(183, 214, 255, 0.12) 29px 30px);
+  mask-image: linear-gradient(90deg, black, transparent 68%);
+}
+
+.arting-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+}
+
+.arting h2 {
+  max-width: 690px;
+  margin-bottom: 22px;
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+}
+
+.arting-copy > p:not(.eyebrow) {
+  max-width: 700px;
+  margin-bottom: 28px;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.kofi-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 17px;
+  border: 1px solid rgba(213, 174, 255, 0.28);
+  border-radius: 999px;
+  color: #f3e9ff;
+  background: rgba(195, 110, 255, 0.12);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.kofi-link:hover,
+.kofi-link:focus-visible {
+  background: rgba(195, 110, 255, 0.22);
+  transform: translateY(-2px);
+}
+
+.kofi-link span {
+  transition: transform 180ms ease;
+}
+
+.kofi-link:hover span {
+  transform: translate(2px, -2px);
+}
+
 .manifesto {
   position: relative;
   margin: 20px auto 118px;
@@ -516,6 +594,10 @@ footer a:focus-visible {
     min-height: 330px;
   }
 
+  .arting {
+    grid-template-columns: 1fr;
+  }
+
   .card-icon {
     margin-bottom: 38px;
   }
@@ -560,6 +642,10 @@ footer a:focus-visible {
     font-size: clamp(3.25rem, 19vw, 4.7rem);
   }
 
+  h1.motto {
+    font-size: clamp(1.85rem, 9.5vw, 2.65rem);
+  }
+
   .story {
     padding: 72px 0 80px;
   }
@@ -567,6 +653,11 @@ footer a:focus-visible {
   .project-card {
     padding: 25px;
     border-radius: 21px;
+  }
+
+  .arting {
+    padding: 30px 24px 38px;
+    border-radius: 22px;
   }
 
   .manifesto {
