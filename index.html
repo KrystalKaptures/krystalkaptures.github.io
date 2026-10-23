@@ -21,9 +21,20 @@
   html, body{ min-height:100%; }
   body{ position:relative; }
   #cv{ position:fixed; inset:0; width:100vw; height:100vh; z-index:-1; display:block; }
-  #clockChip{ position:fixed; top:10px; right:12px; z-index:2; background:rgba(0,0,0,.45); color:#fff;
-              font-size:.78rem; padding:4px 9px; border-radius:20px; font-family:monospace,monospace;
-              letter-spacing:.03em; pointer-events:none; }
+  #clockChip{ position:fixed; top:12px; right:14px; z-index:6; padding:7px 11px 7px 10px;
+              display:flex; align-items:center; gap:9px; border:1px solid rgba(168,204,255,.2);
+              border-radius:999px; color:#fff; background:rgba(4,12,29,.58);
+              box-shadow:inset 0 1px rgba(255,255,255,.05), 0 8px 25px rgba(0,0,0,.18);
+              backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+              text-decoration:none; transition:background .18s, border-color .18s, transform .18s; }
+  #clockChip:hover{ background:rgba(8,23,50,.8); border-color:rgba(121,230,255,.42); transform:translateY(-1px); }
+  #clockChip:focus-visible{ outline:2px solid #79e6ff; outline-offset:3px; }
+  #clockChip .clock-label{ display:flex; align-items:center; gap:5px; color:#91a8ca;
+                           font:850 .55rem/1 Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+  #clockChip .clock-dot{ width:6px; height:6px; flex:none; border-radius:50%; background:#76f3c3;
+                         box-shadow:0 0 8px #76f3c3; }
+  #clockChip time{ color:#fff; font:850 .82rem/1 Arial,sans-serif; letter-spacing:-.02em;
+                   font-variant-numeric:tabular-nums; }
   #bubble{ position:fixed; z-index:2; transform:translate(-50%,-100%); background:#fff; color:#2a2a2a;
            padding:8px 12px; border-radius:12px; font-size:.85rem; font-weight:600; max-width:220px;
            text-align:center; box-shadow:0 3px 10px rgba(0,0,0,.28); opacity:0; transition:opacity .25s;
@@ -103,6 +114,10 @@
     #magicCloud{ transition:none; }
     #magicCloud.travelling{ animation:none; }
   }
+  @media (max-width:520px){
+    #clockChip{ top:10px; right:10px; padding:7px 9px; gap:7px; }
+    #clockChip .clock-label{ font-size:0; gap:0; }
+  }
 </style>
 
     <title>Krystal Kaptures</title>
@@ -111,7 +126,10 @@
 
 <canvas id="cv"></canvas>
 <button id="magicCloud" type="button" aria-label="Cloud elevator: carry Krystal up" data-hint="take me up" title="Click to carry Krystal up">☁️</button>
-<div id="clockChip">--:--</div>
+<a id="clockChip" href="klock/" aria-label="Open FunTimes">
+  <span class="clock-label"><span class="clock-dot" aria-hidden="true"></span> FunTimes</span>
+  <time id="clockChipTime" datetime="">--:--</time>
+</a>
 <div id="bubble"></div>
 <div id="debugPanel" class="hide">
   <span id="debugClock">--:--</span>
@@ -288,7 +306,7 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const bubble = document.getElementById('bubble');
 const magicCloud = document.getElementById('magicCloud');
-const clockChip = document.getElementById('clockChip');
+const clockChipTime = document.getElementById('clockChipTime');
 const debugClock = document.getElementById('debugClock');
 let W = 0, H = 0, groundY = 0;
 
@@ -525,8 +543,9 @@ function checkFunTime(){
   const now = new Date();
   const h12 = (now.getHours() % 12) || 12;
   const key = `${h12}:${String(now.getMinutes()).padStart(2,'0')}`;
-  clockChip.textContent = `${h12}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()>=12?'PM':'AM'}`;
-  debugClock.textContent = clockChip.textContent;
+  clockChipTime.textContent = `${h12}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()>=12?'PM':'AM'}`;
+  clockChipTime.dateTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  debugClock.textContent = clockChipTime.textContent;
   if (key !== lastFunKey){
     lastFunKey = key;
     const reason = FUN_TIMES[key];
@@ -601,8 +620,12 @@ function handlePointer(x, y){
   if (celebratingKey){ launchFirework(x, y); return; }
   handleSpotClick(x, y);
 }
-window.addEventListener('click', e => handlePointer(e.clientX, e.clientY));
+window.addEventListener('click', e => {
+  if (e.target.closest('#clockChip')) return;
+  handlePointer(e.clientX, e.clientY);
+});
 window.addEventListener('touchstart', e => {
+  if (e.target.closest('#clockChip')) return;
   for (const t of e.touches) handlePointer(t.clientX, t.clientY);
 }, {passive:true});
 
