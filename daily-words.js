@@ -120,6 +120,64 @@
 
   const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const DAY_PREFIXES = ["s", "m", "t", "w", "th", "f", "s"];
+  const MOOD_OPTIONS = [
+    { id: "bright", emoji: "✨", label: "Bright" },
+    { id: "blue", emoji: "🌧️", label: "Blue" },
+    { id: "bold", emoji: "🔥", label: "Bold" },
+    { id: "gentle", emoji: "🫶", label: "Gentle" },
+    { id: "weird", emoji: "🌀", label: "Weird" }
+  ];
+  const MOOD_WORDS = {
+    0: {
+      bright: ["sunny", "cheerful, hopeful, and full of light"],
+      blue: ["subdued", "quietly reflective with the volume turned down"],
+      bold: ["spirited", "full of courage, energy, and lively feeling"],
+      gentle: ["serene", "calm, peaceful, and untroubled"],
+      weird: ["surreal", "dreamlike, unexpected, and delightfully strange"]
+    },
+    1: {
+      bright: ["marvelous", "causing wonder, delight, or admiration"],
+      blue: ["melancholy", "softly sad and thoughtful in a beautiful way"],
+      bold: ["mighty", "strong, capable, and ready to take up space"],
+      gentle: ["mellow", "pleasantly calm, warm, and easygoing"],
+      weird: ["mischievous", "playfully fond of harmless trouble"]
+    },
+    2: {
+      bright: ["twinkling", "shining with quick little flashes of delight"],
+      blue: ["tearful", "feeling close to tears and worthy of tenderness"],
+      bold: ["tenacious", "determined to hold on and keep going"],
+      gentle: ["tranquil", "quiet, peaceful, and free from disturbance"],
+      weird: ["topsy-turvy", "cheerfully upside down or out of the ordinary"]
+    },
+    3: {
+      bright: ["wonderful", "inspiring pleasure, delight, or admiration"],
+      blue: ["wistful", "gently thoughtful with a touch of longing"],
+      bold: ["wildhearted", "free, brave, and guided by a lively inner spark"],
+      gentle: ["warmhearted", "kind, affectionate, and generous"],
+      weird: ["whimsical", "playfully imaginative and delightfully unexpected"]
+    },
+    4: {
+      bright: ["thriving", "growing strongly and doing wonderfully well"],
+      blue: ["thorny", "beautifully difficult and allowed to feel complicated"],
+      bold: ["thunderous", "powerful, booming, and impossible to ignore"],
+      gentle: ["tender", "soft, caring, and deserving of gentle handling"],
+      weird: ["theatrical", "dramatic, expressive, and made to be noticed"]
+    },
+    5: {
+      bright: ["flourishing", "growing beautifully and finding your way"],
+      blue: ["freezing", "cold, still, and asking for a little extra warmth"],
+      bold: ["fearless", "brave enough to move toward what matters"],
+      gentle: ["featherlight", "delicate, soft, and almost weightlessly light"],
+      weird: ["funky", "unconventional, expressive, and happily offbeat"]
+    },
+    6: {
+      bright: ["sparkling", "shining brightly with tiny flashes of joy"],
+      blue: ["stormy", "full of heavy weather that will eventually pass"],
+      bold: ["strong", "steady, capable, and holding your ground"],
+      gentle: ["soothing", "gently calming and comforting"],
+      weird: ["surreal", "dreamlike, unexpected, and delightfully strange"]
+    }
+  };
   const DATAMUSE_URL = "https://api.datamuse.com/words";
   const HISTORY_KEY = "krystal-daily-word-rotation-v2";
   const BLOCKED_WORDS = new Set([
@@ -189,6 +247,23 @@
     const choices = WORDS_BY_DAY[dayIndex];
     const selected = chooseFromRotation(choices, dayIndex);
     return makeWord(selected.choice, dayIndex, selected.index, choices.length, "curated offline list");
+  }
+
+  function getMoodWord(mood, date) {
+    const chosenDate = date || new Date();
+    const dayIndex = chosenDate.getDay();
+    const option = MOOD_OPTIONS.find(function (item) { return item.id === mood; });
+    const choice = MOOD_WORDS[dayIndex] && MOOD_WORDS[dayIndex][mood];
+    if (!option || !choice) return null;
+    return {
+      word: choice[0],
+      definition: choice[1],
+      dayName: DAY_NAMES[dayIndex],
+      mood: option.id,
+      moodLabel: option.label,
+      emoji: option.emoji,
+      source: "feeling pick"
+    };
   }
 
   function adjectiveDefinition(entry) {
@@ -279,6 +354,8 @@
 
   window.KRYSTAL_DAILY_WORDS = {
     loadDailyWord: loadDailyWord,
-    getFallbackWord: getFallbackWord
+    getFallbackWord: getFallbackWord,
+    getMoodWord: getMoodWord,
+    getMoodOptions: function () { return MOOD_OPTIONS.slice(); }
   };
 })();

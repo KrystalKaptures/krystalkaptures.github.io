@@ -78,11 +78,15 @@
         </article>
 
         <article class="project-card words-card">
-          <span class="card-icon" aria-hidden="true">Aa</span>
+          <div class="mini-word-widget" aria-label="Alliteration feeling picker">
+            <span class="mini-word-label">today’s phrase</span>
+            <strong id="mini-word-phrase" aria-live="polite">Gathering words…</strong>
+            <div class="mini-moods" id="mini-moods" aria-label="Choose how today feels"></div>
+          </div>
           <p class="card-kicker">Play with language</p>
-          <h3>Word of the Day</h3>
+          <h3>Alliteration of the Day</h3>
           <p>I love alliteration, wordplay, and finding small ways to play in the day-to-day. Each morning gets a fresh adjective—a tiny invitation to notice language and carry a little delight along.</p>
-          <a href="day/index.html">Find today’s word <span aria-hidden="true">→</span></a>
+          <a href="day/index.html">Find today’s feeling <span aria-hidden="true">→</span></a>
         </article>
 
         <article class="project-card play-card">
@@ -126,6 +130,7 @@
     </div>
   </footer>
 
+  <script src="daily-words.js?v=3"></script>
   <script>
     const magicButton = document.querySelector('.magic-button');
 
@@ -243,6 +248,46 @@
     updateMiniClock();
     updateMiniTally();
     setInterval(updateMiniClock, 1000);
+
+    const miniWordPhrase = document.querySelector('#mini-word-phrase');
+    const miniMoods = document.querySelector('#mini-moods');
+    const wordMoodStorageKey = 'kk-alliteration-mood-v1';
+    const wordToday = new Date();
+
+    function showMiniWord(word, mood) {
+      miniWordPhrase.textContent = `${word.word} ${word.dayName}`;
+      document.querySelectorAll('.mini-mood-button').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.mood === mood));
+      });
+    }
+
+    function chooseMiniMood(mood) {
+      const word = window.KRYSTAL_DAILY_WORDS.getMoodWord(mood, wordToday);
+      if (!word) return;
+      try { localStorage.setItem(wordMoodStorageKey, mood); } catch {}
+      showMiniWord(word, mood);
+    }
+
+    window.KRYSTAL_DAILY_WORDS.getMoodOptions().forEach((mood) => {
+      const button = document.createElement('button');
+      button.className = 'mini-mood-button';
+      button.type = 'button';
+      button.dataset.mood = mood.id;
+      button.textContent = mood.emoji;
+      button.setAttribute('aria-label', `${mood.label} feeling`);
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => chooseMiniMood(mood.id));
+      miniMoods.appendChild(button);
+    });
+
+    let savedWordMood = '';
+    try { savedWordMood = localStorage.getItem(wordMoodStorageKey) || ''; } catch {}
+    const savedMoodWord = window.KRYSTAL_DAILY_WORDS.getMoodWord(savedWordMood, wordToday);
+    if (savedMoodWord) showMiniWord(savedMoodWord, savedWordMood);
+    else {
+      showMiniWord(window.KRYSTAL_DAILY_WORDS.getFallbackWord(wordToday), '');
+      window.KRYSTAL_DAILY_WORDS.loadDailyWord(wordToday).then((word) => showMiniWord(word, ''));
+    }
   </script>
 </body>
 </html>
