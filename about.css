@@ -286,6 +286,31 @@ h2 {
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
+.mini-funtime {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 34px;
+  padding: 15px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid rgba(121, 230, 255, 0.2);
+  border-radius: 17px;
+  background: rgba(3, 11, 27, 0.5);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.mini-clock-label { display: block; color: #8da2c5; font-size: 0.61rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.mini-clock-label i { width: 6px; height: 6px; margin-right: 5px; display: inline-block; border-radius: 50%; background: #76f3c3; box-shadow: 0 0 8px #76f3c3; }
+.mini-funtime time { display: block; margin-top: 3px; color: #fff; font-size: 1.5rem; font-weight: 850; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.mini-funtime button { width: 42px; height: 42px; flex: none; border: 1px solid rgba(121, 230, 255, 0.38); border-radius: 14px; color: #071426; background: var(--blue); box-shadow: 0 5px 0 #346d85, 0 10px 22px rgba(0, 0, 0, 0.24); font-size: 1rem; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease; }
+.mini-funtime button:active { transform: translateY(4px); box-shadow: 0 1px 0 #346d85, 0 5px 12px rgba(0, 0, 0, 0.24); }
+.mini-funtime button:disabled { border-color: rgba(156, 178, 211, 0.14); color: #70809b; background: rgba(135, 158, 191, 0.1); box-shadow: 0 3px 0 rgba(41, 54, 78, 0.7); cursor: not-allowed; transform: none; }
+.fun-card-links { position: relative; z-index: 2; margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.project-card .mini-tally-link { color: #91a8cb; font-size: 0.68rem; font-weight: 700; }
+.project-card .mini-tally-link:hover, .project-card .mini-tally-link:focus-visible { color: var(--blue); }
+
 .project-card::after {
   position: absolute;
   right: -65px;

@@ -1,39 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Display</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Catch satisfying patterns on the clock and turn them into tiny celebrations.">
+    <meta name="theme-color" content="#071126">
+    <link rel="icon" type="image/png" href="../favicon.png">
     <link rel="stylesheet" href="style.css">
+    <title>FunTimes | Krystal Kaptures</title>
 </head>
 <body>
-    <div class="container">
-        <div class="clock">
-            <div class="time-display" id="time-12"></div>
-            <div class="date-display" id="date-12"></div>
-        </div>
-        <div class="celebration-title" id="celebration-title" aria-live="polite">
-            Fun Time!
-        </div>
-        <div class="celebration-reason" id="celebration-reason" aria-live="polite"></div>
-        <button class="celebrate-button debug-only" id="debug-celebrate" type="button">
-            Debug Celebration
-        </button>
-        <div class="debug-controls debug-only" aria-label="Debug time warp">
-            <input
-                class="debug-input debug-only"
-                id="debug-time"
-                type="text"
-                inputmode="numeric"
-                placeholder="1:23"
-                aria-label="Debug time"
-            />
-            <button class="debug-warp debug-only" id="debug-warp" type="button">
-                Warp
+    <div class="aurora" aria-hidden="true"></div>
+
+    <header class="site-header">
+        <a class="brand" href="../index.html" aria-label="Krystal Kaptures home">
+            <img src="../assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
+        </a>
+        <nav aria-label="FunTimes navigation">
+            <a href="../about.html">About</a>
+            <button class="tally-link" id="tally-button" type="button" aria-haspopup="dialog">
+                Funtimes Caught <span id="caught-count">0</span>
             </button>
+        </nav>
+    </header>
+
+    <main>
+        <section class="intro" aria-labelledby="page-title">
+            <p class="eyebrow">Notice the pattern</p>
+            <h1 id="page-title">Fun<span>Times</span></h1>
+            <p>When the clock clicks into a satisfying pattern, pause for one tiny celebration.</p>
+        </section>
+
+        <section class="clock-stage" aria-label="Current time and celebration controls">
+            <div class="orbit orbit-one" aria-hidden="true"></div>
+            <div class="orbit orbit-two" aria-hidden="true"></div>
+            <div class="clock-card" id="clock-card">
+                <div class="clock-topline">
+                    <span class="live-dot" aria-hidden="true"></span>
+                    <span id="clock-state">watching for a FunTime</span>
+                </div>
+                <time class="time-display" id="time-12" datetime="">--:--</time>
+                <div class="period-display" id="period">--</div>
+                <time class="date-display" id="date-12" datetime=""></time>
+
+                <div class="timing-board">
+                    <div class="timing-cell">
+                        <span>Next FunTime</span>
+                        <strong id="next-funtime">--:--</strong>
+                        <small id="next-countdown">calculating…</small>
+                    </div>
+                    <div class="timing-cell">
+                        <span>Last celebrated</span>
+                        <strong id="last-funtime">None yet</strong>
+                        <small id="last-celebrated">Your first catch is waiting.</small>
+                    </div>
+                </div>
+
+                <div class="moment-copy" aria-live="polite">
+                    <strong id="celebration-title">The next little pattern is on its way.</strong>
+                    <span id="celebration-reason">Keep the clock nearby and we’ll catch it together.</span>
+                </div>
+
+                <button class="catch-button" id="catch-button" type="button" disabled>
+                    <span class="catch-button-icon" aria-hidden="true">✦</span>
+                    <span id="catch-button-label">Waiting for a FunTime</span>
+                </button>
+                <p class="button-hint">The button wakes up when a real FunTime arrives.</p>
+            </div>
+        </section>
+
+        <section class="controls-shell" aria-label="Personalize FunTimes">
+            <div class="controls-heading">
+                <div>
+                    <p class="eyebrow">Make it yours</p>
+                    <h2>Edit the vibe</h2>
+                </div>
+                <button class="reset-button" id="reset-look" type="button">Reset</button>
+            </div>
+
+            <div class="customizer-grid">
+                <label class="color-control">
+                    <span>Night sky</span>
+                    <span class="color-input-wrap"><input id="background-color" type="color" value="#071126"><span>change</span></span>
+                </label>
+                <label class="color-control">
+                    <span>Magic glow</span>
+                    <span class="color-input-wrap"><input id="accent-color" type="color" value="#79e6ff"><span>change</span></span>
+                </label>
+                <fieldset class="effect-control">
+                    <legend>Celebration</legend>
+                    <div class="segmented" id="effect-options">
+                        <label><input type="radio" name="effect" value="confetti" checked><span>Confetti</span></label>
+                        <label><input type="radio" name="effect" value="sparkles"><span>Sparkles</span></label>
+                        <label><input type="radio" name="effect" value="bubbles"><span>Bubbles</span></label>
+                    </div>
+                </fieldset>
+                <label class="message-control">
+                    <span>Your celebration message</span>
+                    <input id="celebration-message" type="text" maxlength="42" value="FunTime caught!" placeholder="FunTime caught!">
+                </label>
+            </div>
+
+            <div class="embed-note">
+                <span aria-hidden="true">◉</span>
+                <p><strong>Streamer mode ready.</strong> Add this page as an OBS browser source with <code>?embed=1</code> for a clean clock overlay.</p>
+                <button id="copy-embed" type="button">Copy embed link</button>
+            </div>
+
+            <div class="debug-tools" id="debug-tools" hidden aria-label="Debug tools">
+                <strong>Debug tools</strong>
+                <input id="debug-time" type="text" inputmode="numeric" placeholder="1:23" aria-label="Debug time">
+                <button id="debug-warp" type="button">Warp time</button>
+                <button id="debug-celebrate" type="button">Test burst</button>
+            </div>
+        </section>
+    </main>
+
+    <dialog class="caught-dialog" id="caught-dialog" aria-labelledby="caught-title">
+        <div class="dialog-topline">
+            <div>
+                <p class="eyebrow">Your tiny archive</p>
+                <h2 id="caught-title"><span id="dialog-count">0</span> Funtimes Caught</h2>
+            </div>
+            <button class="close-dialog" id="close-dialog" type="button" aria-label="Close caught Funtimes">×</button>
         </div>
-    </div>
-    <div class="confetti" id="confetti-container" aria-hidden="true"></div>
+        <p class="dialog-intro">One row per clock time. Each visit can add one new tally mark to that time.</p>
+        <ol class="caught-list" id="caught-list"></ol>
+        <button class="clear-history" id="clear-history" type="button">Clear my tally</button>
+    </dialog>
+
+    <div class="celebration-layer" id="celebration-layer" aria-hidden="true"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <footer>
+        <span>Small patterns. Proper celebrations.</span>
+        <a href="../about.html">Made by Krystal <span aria-hidden="true">↗</span></a>
+    </footer>
+
     <script src="script.js"></script>
 </body>
 </html>

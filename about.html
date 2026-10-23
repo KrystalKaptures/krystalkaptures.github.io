@@ -61,11 +61,20 @@
 
       <div class="project-grid">
         <article class="project-card fun-card">
-          <span class="card-icon" aria-hidden="true">⏱</span>
+          <div class="mini-funtime" aria-label="Live FunTimes clock">
+            <div>
+              <span class="mini-clock-label"><i aria-hidden="true"></i> live clock</span>
+              <time id="mini-funtime-clock" datetime="">--:--</time>
+            </div>
+            <button id="mini-celebrate" type="button" aria-label="Waiting for a FunTime" disabled>✦</button>
+          </div>
           <p class="card-kicker">Notice the pattern</p>
           <h3>FunTimes</h3>
           <p>The clock hides satisfying little patterns—1:11, 12:34, and all their friends. FunTimes turns those passing points of connection into reasons to pause and celebrate.</p>
-          <a href="klock/">Catch a FunTime <span aria-hidden="true">→</span></a>
+          <div class="fun-card-links">
+            <a href="klock/">Catch a FunTime <span aria-hidden="true">→</span></a>
+            <a class="mini-tally-link" href="klock/" id="mini-tally">Funtimes Caught · 0</a>
+          </div>
         </article>
 
         <article class="project-card words-card">
@@ -137,6 +146,103 @@
         sparkle.addEventListener('animationend', () => sparkle.remove());
       }
     });
+
+    const miniClock = document.querySelector('#mini-funtime-clock');
+    const miniCelebrate = document.querySelector('#mini-celebrate');
+    const miniTally = document.querySelector('#mini-tally');
+    const miniStorageKey = 'kk-funtimes-catches-v1';
+    const miniVisitKey = 'kk-funtimes-visit-catches-v1';
+    let miniTimeKey = '';
+
+    function getMiniCatches() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(miniStorageKey)) || [];
+        const grouped = new Map();
+        stored.forEach((caught) => {
+          const key = caught.key || String(caught.label || '').match(/\d{1,2}:\d{2}/)?.[0];
+          if (!key) return;
+          const existing = grouped.get(key);
+          const count = Math.max(1, Number(caught.count) || 1);
+          const lastCaughtAt = caught.lastCaughtAt || caught.caughtAt || new Date().toISOString();
+          if (existing) {
+            existing.count += count;
+            if (lastCaughtAt > existing.lastCaughtAt) existing.lastCaughtAt = lastCaughtAt;
+          } else {
+            grouped.set(key, { key, count, reason: caught.reason || 'A moment worth catching.', lastCaughtAt });
+          }
+        });
+        return [...grouped.values()];
+      }
+      catch { return []; }
+    }
+
+    function updateMiniTally() {
+      const total = getMiniCatches().reduce((sum, caught) => sum + caught.count, 0);
+      miniTally.textContent = `Funtimes Caught · ${total}`;
+    }
+
+    function updateMiniClock() {
+      const now = new Date();
+      miniClock.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      miniClock.dateTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      miniTimeKey = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const isFunTime = isMiniFunTime(miniTimeKey);
+      miniCelebrate.disabled = !isFunTime;
+      miniCelebrate.setAttribute('aria-label', isFunTime ? `Celebrate the ${miniTimeKey} FunTime` : 'Waiting for a FunTime');
+    }
+
+    function isMiniFunTime(timeKey) {
+      const [hour, minute] = timeKey.split(':');
+      const digits = `${hour}${minute}`;
+      const values = [...digits].map(Number);
+      const palindrome = digits === [...digits].reverse().join('');
+      const repeatedPair = hour === minute;
+      const countingUp = values.every((value, index) => index === 0 || value === values[index - 1] + 1);
+      const countingDown = values.every((value, index) => index === 0 || value === values[index - 1] - 1);
+      return palindrome || repeatedPair || countingUp || countingDown;
+    }
+
+    miniCelebrate.addEventListener('click', () => {
+      if (!isMiniFunTime(miniTimeKey)) return;
+      const catches = getMiniCatches();
+      let caughtThisVisit = [];
+      try { caughtThisVisit = JSON.parse(sessionStorage.getItem(miniVisitKey)) || []; } catch {}
+      if (!caughtThisVisit.includes(miniTimeKey)) {
+        const now = new Date().toISOString();
+        const existing = catches.find((caught) => caught.key === miniTimeKey);
+        if (existing) {
+          existing.count += 1;
+          existing.lastCaughtAt = now;
+        } else {
+          catches.push({ key: miniTimeKey, count: 1, reason: 'Caught from the tiny About page clock.', lastCaughtAt: now });
+        }
+        caughtThisVisit.push(miniTimeKey);
+        try {
+          localStorage.setItem(miniStorageKey, JSON.stringify(catches));
+          sessionStorage.setItem(miniVisitKey, JSON.stringify(caughtThisVisit));
+        } catch {}
+      }
+      updateMiniTally();
+      if (navigator.vibrate) navigator.vibrate(35);
+      const rect = miniCelebrate.getBoundingClientRect();
+      const colors = ['#79e6ff', '#b79cff', '#fff3a6', '#ff9bd2'];
+      for (let i = 0; i < 12; i += 1) {
+        const sparkle = document.createElement('span');
+        sparkle.className = 'button-sparkle';
+        sparkle.textContent = i % 3 === 0 ? '✦' : '·';
+        sparkle.style.left = `${rect.left + rect.width / 2}px`;
+        sparkle.style.top = `${rect.top + rect.height / 2 + window.scrollY}px`;
+        sparkle.style.setProperty('--x', `${(Math.random() - 0.5) * 150}px`);
+        sparkle.style.setProperty('--y', `${-25 - Math.random() * 95}px`);
+        sparkle.style.color = colors[i % colors.length];
+        document.body.appendChild(sparkle);
+        sparkle.addEventListener('animationend', () => sparkle.remove());
+      }
+    });
+
+    updateMiniClock();
+    updateMiniTally();
+    setInterval(updateMiniClock, 1000);
   </script>
 </body>
 </html>
