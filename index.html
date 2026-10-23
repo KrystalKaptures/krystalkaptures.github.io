@@ -32,9 +32,16 @@
   #clockChip .clock-label{ display:flex; align-items:center; gap:5px; color:#91a8ca;
                            font:850 .55rem/1 Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
   #clockChip .clock-dot{ width:6px; height:6px; flex:none; border-radius:50%; background:#76f3c3;
-                         box-shadow:0 0 8px #76f3c3; }
+                         box-shadow:0 0 8px #76f3c3; display:grid; place-items:center; }
   #clockChip time{ color:#fff; font:850 .82rem/1 Arial,sans-serif; letter-spacing:-.02em;
                    font-variant-numeric:tabular-nums; }
+  #clockChip.is-funtime{ border-color:rgba(255,233,133,.72); background:rgba(37,28,56,.82);
+                         box-shadow:inset 0 1px rgba(255,255,255,.09), 0 0 20px rgba(255,233,133,.28); }
+  #clockChip.is-funtime .clock-label{ color:#fff3a6; }
+  #clockChip.is-funtime .clock-dot{ width:12px; height:12px; border-radius:0; color:#fff3a6;
+                                    background:transparent; box-shadow:none; font-size:.85rem;
+                                    filter:drop-shadow(0 0 6px #ffe985); animation:funTimeTwinkle 1s ease-in-out infinite alternate; }
+  @keyframes funTimeTwinkle{ to{ transform:scale(1.22) rotate(12deg); filter:drop-shadow(0 0 10px #fff3a6); } }
   #bubble{ position:fixed; z-index:2; transform:translate(-50%,-100%); background:#fff; color:#2a2a2a;
            padding:8px 12px; border-radius:12px; font-size:.85rem; font-weight:600; max-width:220px;
            text-align:center; box-shadow:0 3px 10px rgba(0,0,0,.28); opacity:0; transition:opacity .25s;
@@ -113,6 +120,7 @@
   @media (prefers-reduced-motion:reduce){
     #magicCloud{ transition:none; }
     #magicCloud.travelling{ animation:none; }
+    #clockChip.is-funtime .clock-dot{ animation:none; }
   }
   @media (max-width:520px){
     #clockChip{ top:10px; right:10px; padding:7px 9px; gap:7px; }
@@ -306,6 +314,8 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const bubble = document.getElementById('bubble');
 const magicCloud = document.getElementById('magicCloud');
+const clockChip = document.getElementById('clockChip');
+const clockChipDot = clockChip.querySelector('.clock-dot');
 const clockChipTime = document.getElementById('clockChipTime');
 const debugClock = document.getElementById('debugClock');
 let W = 0, H = 0, groundY = 0;
@@ -543,12 +553,15 @@ function checkFunTime(){
   const now = new Date();
   const h12 = (now.getHours() % 12) || 12;
   const key = `${h12}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const reason = FUN_TIMES[key];
   clockChipTime.textContent = `${h12}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()>=12?'PM':'AM'}`;
   clockChipTime.dateTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  clockChip.classList.toggle('is-funtime', Boolean(reason));
+  clockChipDot.textContent = reason ? '✦' : '';
+  clockChip.setAttribute('aria-label', reason ? `Open FunTimes — ${key} is a FunTime` : 'Open FunTimes');
   debugClock.textContent = clockChipTime.textContent;
   if (key !== lastFunKey){
     lastFunKey = key;
-    const reason = FUN_TIMES[key];
     if (reason) triggerCelebration(key, reason);
   }
 }

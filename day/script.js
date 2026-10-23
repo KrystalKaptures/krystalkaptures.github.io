@@ -18,7 +18,9 @@ const refs = {
   options: document.querySelector('#mood-options'),
   card: document.querySelector('#word-card'),
   toast: document.querySelector('#word-toast'),
-  headerClock: document.querySelector('#header-funtime-clock')
+  headerClock: document.querySelector('#header-funtime-clock'),
+  headerWidget: document.querySelector('.header-funtime'),
+  headerIndicator: document.querySelector('.header-clock-label i')
 };
 
 const today = new Date();
@@ -27,8 +29,24 @@ let toastTimer;
 
 function updateHeaderClock() {
   const now = new Date();
+  const timeKey = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const isFunTime = isHeaderFunTime(timeKey);
   refs.headerClock.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   refs.headerClock.dateTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  refs.headerWidget.classList.toggle('is-funtime', isFunTime);
+  refs.headerIndicator.textContent = isFunTime ? '✦' : '';
+  refs.headerWidget.setAttribute('aria-label', isFunTime ? `Open FunTimes — ${timeKey} is a FunTime` : 'Open FunTimes');
+}
+
+function isHeaderFunTime(timeKey) {
+  const [hour, minute] = timeKey.split(':');
+  const digits = `${hour}${minute}`;
+  const values = [...digits].map(Number);
+  const palindrome = digits === [...digits].reverse().join('');
+  const repeatedPair = hour === minute;
+  const countingUp = values.every((value, index) => index === 0 || value === values[index - 1] + 1);
+  const countingDown = values.every((value, index) => index === 0 || value === values[index - 1] - 1);
+  return palindrome || repeatedPair || countingUp || countingDown;
 }
 
 function readMood() {
