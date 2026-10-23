@@ -17,12 +17,19 @@ const refs = {
   emoji: document.querySelector('#mood-emoji'),
   options: document.querySelector('#mood-options'),
   card: document.querySelector('#word-card'),
-  toast: document.querySelector('#word-toast')
+  toast: document.querySelector('#word-toast'),
+  headerClock: document.querySelector('#header-funtime-clock')
 };
 
 const today = new Date();
 let selectedMood = readMood();
 let toastTimer;
+
+function updateHeaderClock() {
+  const now = new Date();
+  refs.headerClock.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  refs.headerClock.dateTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
 
 function readMood() {
   try { return localStorage.getItem(STORAGE_KEY) || '';
@@ -99,6 +106,8 @@ window.KRYSTAL_DAILY_WORDS.getMoodOptions().forEach((mood) => {
 refs.date.textContent = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(today);
 refs.date.dateTime = today.toISOString().slice(0, 10);
 document.querySelector('#daily-pick').addEventListener('click', loadDailyPick);
+updateHeaderClock();
+window.setInterval(updateHeaderClock, 1000);
 
 const savedMoodWord = window.KRYSTAL_DAILY_WORDS.getMoodWord(selectedMood, today, false);
 if (savedMoodWord) {
