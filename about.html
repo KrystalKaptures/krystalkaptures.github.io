@@ -130,7 +130,7 @@
     </div>
   </footer>
 
-  <script src="daily-words.js?v=3"></script>
+  <script src="daily-words.js?v=5"></script>
   <script>
     const magicButton = document.querySelector('.magic-button');
 
@@ -262,7 +262,7 @@
     }
 
     function chooseMiniMood(mood) {
-      const word = window.KRYSTAL_DAILY_WORDS.getMoodWord(mood, wordToday);
+      const word = window.KRYSTAL_DAILY_WORDS.getMoodWord(mood, wordToday, true);
       if (!word) return;
       try { localStorage.setItem(wordMoodStorageKey, mood); } catch {}
       showMiniWord(word, mood);
@@ -282,7 +282,7 @@
 
     let savedWordMood = '';
     try { savedWordMood = localStorage.getItem(wordMoodStorageKey) || ''; } catch {}
-    const savedMoodWord = window.KRYSTAL_DAILY_WORDS.getMoodWord(savedWordMood, wordToday);
+    const savedMoodWord = window.KRYSTAL_DAILY_WORDS.getMoodWord(savedWordMood, wordToday, false);
     if (savedMoodWord) showMiniWord(savedMoodWord, savedWordMood);
     else {
       showMiniWord(window.KRYSTAL_DAILY_WORDS.getFallbackWord(wordToday), '');

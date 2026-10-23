@@ -178,8 +178,60 @@
       weird: ["surreal", "dreamlike, unexpected, and delightfully strange"]
     }
   };
+  const MOOD_POOL_WORDS = {
+    0: {
+      bright: ["sunlit", "sublime", "starry"],
+      blue: ["still", "slow-blooming", "soulful"],
+      bold: ["spacious", "savoring", "sublime"],
+      gentle: ["soothing", "softhearted", "sheltering"],
+      weird: ["sun-dappled", "starry", "slow-blooming"]
+    },
+    1: {
+      bright: ["magical", "mirthful", "moonlit"],
+      blue: ["misty", "mellow", "mossy"],
+      bold: ["motivated", "momentous", "meticulous"],
+      gentle: ["mindful", "melodic", "mellow"],
+      weird: ["many-splendored", "moonlit", "mossy"]
+    },
+    2: {
+      bright: ["terrific", "tuneful", "tropical"],
+      blue: ["tender", "tousled", "timeless"],
+      bold: ["transformative", "truehearted", "tactile"],
+      gentle: ["tactful", "tactile", "trusty"],
+      weird: ["tousled", "tropical", "twinkling"]
+    },
+    3: {
+      bright: ["wondrous", "wonderstruck", "wide-eyed"],
+      blue: ["windswept", "well-loved", "woodland"],
+      bold: ["willing", "wise", "witty"],
+      gentle: ["welcoming", "well-loved", "wildflowered"],
+      weird: ["woodland", "windswept", "witty"]
+    },
+    4: {
+      bright: ["thankful", "thrilling", "thoughtful"],
+      blue: ["thought-provoking", "thistledown", "thirsty"],
+      bold: ["thrilling", "three-dimensional", "thorough"],
+      gentle: ["thoughtful", "therapeutic", "thankful"],
+      weird: ["thistledown", "three-dimensional", "thrill-seeking"]
+    },
+    5: {
+      bright: ["fabulous", "fresh", "festive"],
+      blue: ["fond", "featherlight", "far-reaching"],
+      bold: ["fiery", "full-hearted", "flourishing"],
+      gentle: ["friendly", "fond", "full-hearted"],
+      weird: ["fanciful", "frolicsome", "free-spirited"]
+    },
+    6: {
+      bright: ["stellar", "sunny", "sensational"],
+      blue: ["storyworthy", "starlit", "serendipitous"],
+      bold: ["spirited", "supercharged", "showstopping"],
+      gentle: ["serendipitous", "starlit", "sprightly"],
+      weird: ["sassy", "snazzy", "spontaneous"]
+    }
+  };
   const DATAMUSE_URL = "https://api.datamuse.com/words";
   const HISTORY_KEY = "krystal-daily-word-rotation-v2";
+  const MOOD_HISTORY_KEY = "kk-alliteration-current-words-v1";
   const BLOCKED_WORDS = new Set([
     "false", "fatal", "feared", "feeble", "filthy", "flaky", "flimsy", "foolish", "frantic", "frightening", "frigid",
     "meaningless", "mediocre", "mindless", "miserable", "moody", "morbid", "mournful", "muddy", "mushy",
@@ -249,12 +301,38 @@
     return makeWord(selected.choice, dayIndex, selected.index, choices.length, "curated offline list");
   }
 
-  function getMoodWord(mood, date) {
+  function getMoodWord(mood, date, advance) {
     const chosenDate = date || new Date();
     const dayIndex = chosenDate.getDay();
     const option = MOOD_OPTIONS.find(function (item) { return item.id === mood; });
-    const choice = MOOD_WORDS[dayIndex] && MOOD_WORDS[dayIndex][mood];
-    if (!option || !choice) return null;
+    const featuredChoice = MOOD_WORDS[dayIndex] && MOOD_WORDS[dayIndex][mood];
+    if (!option || !featuredChoice) return null;
+
+    const extraNames = MOOD_POOL_WORDS[dayIndex][mood] || [];
+    const extras = extraNames.map(function (word) {
+      return WORDS_BY_DAY[dayIndex].find(function (choice) { return choice[0] === word; });
+    }).filter(Boolean);
+    const pool = [featuredChoice].concat(extras).filter(function (choice, index, choices) {
+      return choices.findIndex(function (candidate) { return candidate[0] === choice[0]; }) === index;
+    });
+
+    const dateKey = [chosenDate.getFullYear(), chosenDate.getMonth() + 1, chosenDate.getDate()].join("-");
+    const stateKey = dateKey + ":" + mood;
+    let history = {};
+    try { history = JSON.parse(localStorage.getItem(MOOD_HISTORY_KEY) || "{}") || {}; }
+    catch (error) { history = {}; }
+
+    let index = Number.isInteger(history[stateKey]) ? history[stateKey] : null;
+    if (index === null || index >= pool.length) {
+      index = (chosenDate.getDate() + dayIndex + mood.length) % pool.length;
+    } else if (advance) {
+      index = (index + 1) % pool.length;
+    }
+    history[stateKey] = index;
+    try { localStorage.setItem(MOOD_HISTORY_KEY, JSON.stringify(history)); }
+    catch (error) { /* Rotation can be session-only when storage is unavailable. */ }
+
+    const choice = pool[index];
     return {
       word: choice[0],
       definition: choice[1],
@@ -262,7 +340,9 @@
       mood: option.id,
       moodLabel: option.label,
       emoji: option.emoji,
-      source: "feeling pick"
+      source: "feeling pick",
+      index: index,
+      total: pool.length
     };
   }
 

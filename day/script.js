@@ -50,7 +50,7 @@ function showWord(dailyWord, mood) {
   refs.day.textContent = dailyWord.dayName;
   refs.definition.textContent = dailyWord.definition;
   refs.emoji.textContent = dailyWord.emoji || '✦';
-  refs.source.textContent = dailyWord.moodLabel ? `${dailyWord.moodLabel} feeling` : 'daily pick';
+  refs.source.textContent = dailyWord.moodLabel ? `${dailyWord.moodLabel} · ${dailyWord.index + 1} of ${dailyWord.total}` : 'daily pick';
   setTheme(mood || 'daily');
   document.querySelectorAll('.mood-button').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.mood === mood));
@@ -65,7 +65,7 @@ function showToast(message) {
 }
 
 function chooseMood(mood) {
-  const word = window.KRYSTAL_DAILY_WORDS.getMoodWord(mood, today);
+  const word = window.KRYSTAL_DAILY_WORDS.getMoodWord(mood, today, true);
   if (!word) return;
   saveMood(mood);
   showWord(word, mood);
@@ -100,5 +100,8 @@ refs.date.textContent = new Intl.DateTimeFormat(undefined, { weekday: 'long', mo
 refs.date.dateTime = today.toISOString().slice(0, 10);
 document.querySelector('#daily-pick').addEventListener('click', loadDailyPick);
 
-if (window.KRYSTAL_DAILY_WORDS.getMoodWord(selectedMood, today)) chooseMood(selectedMood);
-else loadDailyPick();
+const savedMoodWord = window.KRYSTAL_DAILY_WORDS.getMoodWord(selectedMood, today, false);
+if (savedMoodWord) {
+  saveMood(selectedMood);
+  showWord(savedMoodWord, selectedMood);
+} else loadDailyPick();
