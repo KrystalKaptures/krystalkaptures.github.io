@@ -7,24 +7,23 @@
     <meta name="theme-color" content="#071126">
     <link rel="icon" type="image/png" href="../favicon.png">
     <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="../site-chrome.css?v=1">
     <title>FunTimes | Krystal Kaptures</title>
 </head>
 <body>
+    <a class="kk-skip-link" href="#main-content">Skip to the good stuff</a>
     <div class="aurora" aria-hidden="true"></div>
 
-    <header class="site-header">
-        <a class="brand" href="../index.html" aria-label="Krystal Kaptures home">
+    <header class="kk-site-header">
+        <a class="kk-brand" href="../index.html" aria-label="Krystal Kaptures home">
             <img src="../assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
         </a>
-        <nav aria-label="FunTimes navigation">
-            <a href="../about.html">About</a>
-            <button class="tally-link" id="tally-button" type="button" aria-haspopup="dialog">
-                Funtimes Caught <span id="caught-count">0</span>
-            </button>
+        <nav class="kk-site-nav" aria-label="Primary navigation">
+            <a href="./" aria-current="page"><span class="kk-live-dot" aria-hidden="true"></span> FunTimes</a>
         </nav>
     </header>
 
-    <main>
+    <main id="main-content">
         <section class="intro" aria-labelledby="page-title">
             <p class="eyebrow">Notice the pattern</p>
             <h1 id="page-title">Fun<span>Times</span></h1>
@@ -66,6 +65,9 @@
                     <span id="catch-button-label">Waiting for a FunTime</span>
                 </button>
                 <p class="button-hint">The button wakes up when a real FunTime arrives.</p>
+                <button class="tally-link clock-tally" id="tally-button" type="button" aria-haspopup="dialog">
+                    Funtimes Caught <span id="caught-count">0</span>
+                </button>
             </div>
         </section>
 
@@ -132,9 +134,13 @@
     <div class="celebration-layer" id="celebration-layer" aria-hidden="true"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <footer>
-        <span>Small patterns. Proper celebrations.</span>
-        <a href="../about.html">Made by Krystal <span aria-hidden="true">↗</span></a>
+    <footer class="kk-site-footer">
+        <p><span class="kk-footer-spark" aria-hidden="true">✦</span> Small patterns. Proper celebrations.</p>
+        <div class="kk-footer-links">
+            <a href="https://www.instagram.com/krystalkaptures/">Instagram</a><span aria-hidden="true">·</span>
+            <a href="https://www.twitch.tv/krystalkaptures">Twitch</a><span aria-hidden="true">·</span>
+            <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
+        </div>
     </footer>
 
     <script src="script.js?v=2"></script>

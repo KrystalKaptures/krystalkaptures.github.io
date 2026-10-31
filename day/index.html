@@ -7,27 +7,28 @@
   <meta name="theme-color" content="#081329">
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="../site-chrome.css?v=1">
   <title>Alliteration of the Day | Krystal Kaptures</title>
 </head>
 <body>
+  <a class="kk-skip-link" href="#main-content">Skip to the good stuff</a>
   <div class="word-sky" aria-hidden="true">
     <span>Aa</span><span>✦</span><span>?</span><span>Ww</span><span>·</span>
   </div>
 
-  <header class="site-header">
-    <a class="brand" href="../index.html" aria-label="Krystal Kaptures home">
+  <header class="kk-site-header">
+    <a class="kk-brand" href="../index.html" aria-label="Krystal Kaptures home">
       <img src="../assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
     </a>
-    <nav aria-label="Alliteration navigation">
-      <a href="../about.html">About</a>
+    <nav class="kk-site-nav" aria-label="Primary navigation">
       <a class="header-funtime" href="../klock/" aria-label="Open FunTimes">
-        <span class="header-clock-label"><i aria-hidden="true"></i> FunTimes</span>
+        <span class="header-clock-label"><i class="kk-live-dot" aria-hidden="true"></i> FunTimes</span>
         <time id="header-funtime-clock" datetime="">--:--</time>
       </a>
     </nav>
   </header>
 
-  <main>
+  <main id="main-content">
     <section class="intro" aria-labelledby="page-title">
       <p class="eyebrow">A little language for the day</p>
       <h1 id="page-title">Alliteration<br><span>of the Day</span></h1>
@@ -68,9 +69,13 @@
 
   <div class="word-toast" id="word-toast" role="status" aria-live="polite"></div>
 
-  <footer>
-    <span>Words for however today happens.</span>
-    <a href="../about.html">Made by Krystal <span aria-hidden="true">↗</span></a>
+  <footer class="kk-site-footer">
+    <p><span class="kk-footer-spark" aria-hidden="true">✦</span> Words for however today happens.</p>
+    <div class="kk-footer-links">
+      <a href="https://www.instagram.com/krystalkaptures/">Instagram</a><span aria-hidden="true">·</span>
+      <a href="https://www.twitch.tv/krystalkaptures">Twitch</a><span aria-hidden="true">·</span>
+      <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
+    </div>
   </footer>
 
   <script src="../daily-words.js?v=5"></script>

@@ -63,6 +63,7 @@ nav { display: flex; align-items: center; gap: 10px; }
 nav > a, .tally-link { border: 1px solid var(--line); border-radius: 999px; background: rgba(4, 11, 27, 0.48); color: #dbe8fb; padding: 8px 14px; font-size: 0.78rem; font-weight: 750; text-decoration: none; cursor: pointer; backdrop-filter: blur(12px); transition: transform 180ms ease, border-color 180ms ease; }
 nav > a:hover, .tally-link:hover { transform: translateY(-2px); border-color: rgba(var(--accent-rgb), 0.42); }
 .tally-link span { margin-left: 7px; color: var(--accent); }
+.clock-tally { margin: 15px auto 0; }
 
 .intro { max-width: 680px; margin: 84px auto 36px; text-align: center; }
 .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.18em; text-transform: uppercase; }

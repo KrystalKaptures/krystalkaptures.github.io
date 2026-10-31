@@ -72,10 +72,6 @@
 
   #overlay{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:26px 16px 10px; text-align:center; }
   #topCard{ padding:10px 20px; }
-  @keyframes starHue{ 0%{filter:drop-shadow(0 2px 12px rgba(0,0,0,.5)) hue-rotate(0deg)}
-    100%{filter:drop-shadow(0 2px 12px rgba(0,0,0,.5)) hue-rotate(360deg)} }
-  #brandLogo{ display:block; width:min(100%, 280px); height:auto; margin:0 auto 6px;
-              animation:starHue .4s linear infinite; }
   #dayLabel{ font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
              margin:8px 0 2px; opacity:.9; text-shadow:0 1px 8px rgba(0,0,0,.7); }
   #wordLabel{ font-size:clamp(2.2rem, 8vw, 3.2rem); font-weight:900; margin:0; word-break:break-word;
@@ -128,16 +124,27 @@
   }
 </style>
 
+    <link rel="stylesheet" href="site-chrome.css?v=1">
+
     <title>Krystal Kaptures</title>
 </head>
 <body>
 
+<a class="kk-skip-link" href="#main-content">Skip to the good stuff</a>
+<header class="kk-site-header">
+  <a class="kk-brand" href="index.html" aria-label="Krystal Kaptures home">
+    <img src="assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
+  </a>
+  <nav class="kk-site-nav" aria-label="Primary navigation">
+    <a id="clockChip" href="klock/" aria-label="Open FunTimes">
+      <span class="clock-label"><span class="clock-dot" aria-hidden="true"></span> FunTimes</span>
+      <time id="clockChipTime" datetime="">--:--</time>
+    </a>
+  </nav>
+</header>
+
 <canvas id="cv"></canvas>
 <button id="magicCloud" type="button" aria-label="Cloud elevator: carry Krystal up" data-hint="take me up" title="Click to carry Krystal up">☁️</button>
-<a id="clockChip" href="klock/" aria-label="Open FunTimes">
-  <span class="clock-label"><span class="clock-dot" aria-hidden="true"></span> FunTimes</span>
-  <time id="clockChipTime" datetime="">--:--</time>
-</a>
 <div id="bubble"></div>
 <div id="debugPanel" class="hide">
   <span id="debugClock">--:--</span>
@@ -146,29 +153,26 @@
   <button id="debugRoutine" type="button">Routine</button>
 </div>
 
-<div id="overlay">
+<main id="overlay">
   <div id="topCard">
-    <img id="brandLogo" src="assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures logo">
     <p id="dayLabel"></p>
     <p id="wordLabel">loading...</p>
     <p id="subLabel"></p>
   </div>
 
   <div id="navlinks">
-    <a href="about.html">A little bit About Me</a>
-    <a href="https://krystalkaptures.github.io/blink/">Blink Break</a>
+    <a href="about.html">A Little About Me</a>
+    <a href="https://krystalkaptures.github.io/blink/">Take a Blink Break</a>
   </div>
-</div>
+</main>
 
-<footer>
-  <a href="https://www.instagram.com/krystalkaptures/">Insta</a>
-  <span class="sep">·</span>
-  <a href="https://www.twitch.tv/krystalkaptures">Twitch</a>
-  <span class="sep">·</span>
-  <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
-  <!-- Blog link is paused for now.
-  <span class="sep">·</span>
-  <a href="https://krystalkaptured.blogspot.com/">Blog</a> -->
+<footer class="kk-site-footer kk-site-footer--floating">
+  <p><span class="kk-footer-spark" aria-hidden="true">✦</span> A little magic, always.</p>
+  <div class="kk-footer-links">
+    <a href="https://www.instagram.com/krystalkaptures/">Instagram</a><span aria-hidden="true">·</span>
+    <a href="https://www.twitch.tv/krystalkaptures">Twitch</a><span aria-hidden="true">·</span>
+    <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
+  </div>
 </footer>
 
 <script src="daily-words.js"></script>
