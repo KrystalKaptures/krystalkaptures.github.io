@@ -27,15 +27,6 @@
     padding: 16px 8px;
   }
 
-  a.home-link {
-    align-self: flex-start;
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 13px;
-    margin-bottom: 8px;
-  }
-  a.home-link:hover { color: #fff; }
-
   h1 {
     font-size: 2rem;
     letter-spacing: 2px;
@@ -485,12 +476,24 @@
     .hand .card .count-badge { font-size: 9px; }
   }
 </style>
+<link rel="stylesheet" href="../site-chrome.css?v=2">
 </head>
 <body>
 
-<a class="home-link" href="../index.html">&larr; kk</a>
+<a class="kk-skip-link" href="#main-content">Skip to the good stuff</a>
+<header class="kk-site-header">
+  <a class="kk-brand" href="../index.html" aria-label="Krystal Kaptures home">
+    <img src="../assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
+  </a>
+  <nav class="kk-site-nav" aria-label="Primary navigation">
+    <a class="header-funtime" data-kk-funtime-clock href="../klock/" aria-label="Open FunTimes">
+      <span class="header-clock-label"><i class="kk-live-dot" aria-hidden="true"></i> FunTimes</span>
+      <time datetime="">--:--</time>
+    </a>
+  </nav>
+</header>
 
-<h1>Blink</h1>
+<h1 id="main-content" tabindex="-1">Blink</h1>
 <p class="tagline">Match by color, shape, or count.</p>
 
 <div class="mode-switch" id="mode-switch">
@@ -556,6 +559,18 @@
   <div class="countdown-number" id="countdown-number">3</div>
 </div>
 
+<footer class="kk-site-footer">
+  <p><span class="kk-footer-spark" aria-hidden="true">✦</span> A little magic, always.</p>
+  <div class="kk-footer-links">
+    <a href="https://www.instagram.com/krystalkaptures/">Instagram</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://www.twitch.tv/krystalkaptures">Twitch</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://www.youtube.com/@KrystalKaptured">YouTube</a>
+  </div>
+</footer>
+
+<script src="../site-chrome.js?v=1"></script>
 <script>
 (function () {
   "use strict";

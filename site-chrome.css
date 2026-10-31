@@ -96,6 +96,65 @@
   transform: translateY(-1px);
 }
 
+.kk-site-nav #clockChip .clock-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #91a8ca;
+  font-size: 0.55rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.kk-site-nav #clockChip .clock-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #76f3c3;
+  box-shadow: 0 0 8px #76f3c3;
+}
+
+.kk-site-nav #clockChip time {
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kk-site-nav #clockChip.is-funtime {
+  color: #fff;
+  background: rgba(255, 233, 133, 0.1);
+  box-shadow: 0 0 18px rgba(255, 233, 133, 0.14);
+}
+
+.kk-site-nav #clockChip.is-funtime .clock-label {
+  color: #fff3a6;
+}
+
+.kk-site-nav #clockChip.is-funtime .clock-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  color: #fff3a6;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.85rem;
+  filter: drop-shadow(0 0 6px #ffe985);
+  animation: kk-funtime-twinkle 1s ease-in-out infinite alternate;
+}
+
+@keyframes kk-funtime-twinkle {
+  to {
+    transform: scale(1.22) rotate(12deg);
+    filter: drop-shadow(0 0 10px #fff3a6);
+  }
+}
+
 .kk-site-nav a:hover,
 .kk-site-nav button:hover,
 .kk-site-nav a:focus-visible,
@@ -125,6 +184,62 @@
   border-radius: 50%;
   background: #76f3c3;
   box-shadow: 0 0 8px #76f3c3;
+}
+
+.kk-site-nav .header-funtime {
+  padding: 5px 10px 5px 9px;
+  gap: 9px;
+}
+
+.kk-site-nav .header-clock-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #91a8ca;
+  font-size: 0.55rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.kk-site-nav .header-clock-label i {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #76f3c3;
+  box-shadow: 0 0 8px #76f3c3;
+}
+
+.kk-site-nav .header-funtime time {
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kk-site-nav .header-funtime.is-funtime {
+  color: #fff;
+  background: rgba(255, 233, 133, 0.1);
+  box-shadow: 0 0 18px rgba(255, 233, 133, 0.14);
+}
+
+.kk-site-nav .header-funtime.is-funtime .header-clock-label { color: #fff3a6; }
+
+.kk-site-nav .header-funtime.is-funtime .header-clock-label i {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  color: #fff3a6;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.85rem;
+  filter: drop-shadow(0 0 6px #ffe985);
+  animation: kk-funtime-twinkle 1s ease-in-out infinite alternate;
 }
 
 .kk-site-footer {
@@ -246,5 +361,13 @@
   .kk-site-nav button,
   .kk-site-footer a {
     transition: none;
+  }
+
+  .kk-site-nav #clockChip.is-funtime .clock-dot {
+    animation: none;
+  }
+
+  .kk-site-nav .header-funtime.is-funtime .header-clock-label i {
+    animation: none;
   }
 }

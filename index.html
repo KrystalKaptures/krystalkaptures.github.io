@@ -21,27 +21,6 @@
   html, body{ min-height:100%; }
   body{ position:relative; }
   #cv{ position:fixed; inset:0; width:100vw; height:100vh; z-index:-1; display:block; }
-  #clockChip{ position:fixed; top:12px; right:14px; z-index:6; padding:7px 11px 7px 10px;
-              display:flex; align-items:center; gap:9px; border:1px solid rgba(168,204,255,.2);
-              border-radius:999px; color:#fff; background:rgba(4,12,29,.58);
-              box-shadow:inset 0 1px rgba(255,255,255,.05), 0 8px 25px rgba(0,0,0,.18);
-              backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-              text-decoration:none; transition:background .18s, border-color .18s, transform .18s; }
-  #clockChip:hover{ background:rgba(8,23,50,.8); border-color:rgba(121,230,255,.42); transform:translateY(-1px); }
-  #clockChip:focus-visible{ outline:2px solid #79e6ff; outline-offset:3px; }
-  #clockChip .clock-label{ display:flex; align-items:center; gap:5px; color:#91a8ca;
-                           font:850 .55rem/1 Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
-  #clockChip .clock-dot{ width:6px; height:6px; flex:none; border-radius:50%; background:#76f3c3;
-                         box-shadow:0 0 8px #76f3c3; display:grid; place-items:center; }
-  #clockChip time{ color:#fff; font:850 .82rem/1 Arial,sans-serif; letter-spacing:-.02em;
-                   font-variant-numeric:tabular-nums; }
-  #clockChip.is-funtime{ border-color:rgba(255,233,133,.72); background:rgba(37,28,56,.82);
-                         box-shadow:inset 0 1px rgba(255,255,255,.09), 0 0 20px rgba(255,233,133,.28); }
-  #clockChip.is-funtime .clock-label{ color:#fff3a6; }
-  #clockChip.is-funtime .clock-dot{ width:12px; height:12px; border-radius:0; color:#fff3a6;
-                                    background:transparent; box-shadow:none; font-size:.85rem;
-                                    filter:drop-shadow(0 0 6px #ffe985); animation:funTimeTwinkle 1s ease-in-out infinite alternate; }
-  @keyframes funTimeTwinkle{ to{ transform:scale(1.22) rotate(12deg); filter:drop-shadow(0 0 10px #fff3a6); } }
   #bubble{ position:fixed; z-index:2; transform:translate(-50%,-100%); background:#fff; color:#2a2a2a;
            padding:8px 12px; border-radius:12px; font-size:.85rem; font-weight:600; max-width:220px;
            text-align:center; box-shadow:0 3px 10px rgba(0,0,0,.28); opacity:0; transition:opacity .25s;
@@ -92,13 +71,6 @@
   #navlinks a:active{ transform:scale(.97); }
   #navlinks a:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:3px; }
 
-  footer{ position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:3;
-          max-width:92vw; width:max-content; padding:8px 20px; text-align:center;
-          font-size:.78rem; color:#d8c8f0; background:rgba(0,0,0,.22); border-radius:50px;
-          backdrop-filter:blur(3px); }
-  footer, footer a{ text-decoration:none; }
-  footer a:hover{ opacity:.7; }
-
   /* Once the phrase lands, give it a celebratory rainbow halo without
      flashing. The white center stays crisp and readable over every sky. */
   body.starmode #wordLabel{
@@ -111,20 +83,13 @@
       -3px  2px 0 rgba(101,146,255,.9),
        0 4px 12px rgba(0,0,0,.62);
   }
-  footer .sep{ opacity:.4; margin:0 10px; }
-  footer img{ height:13px; vertical-align:middle; margin:0 3px 2px; border-radius:3px; }
   @media (prefers-reduced-motion:reduce){
     #magicCloud{ transition:none; }
     #magicCloud.travelling{ animation:none; }
-    #clockChip.is-funtime .clock-dot{ animation:none; }
-  }
-  @media (max-width:520px){
-    #clockChip{ top:10px; right:10px; padding:7px 9px; gap:7px; }
-    #clockChip .clock-label{ font-size:0; gap:0; }
   }
 </style>
 
-    <link rel="stylesheet" href="site-chrome.css?v=1">
+    <link rel="stylesheet" href="site-chrome.css?v=2">
 
     <title>Krystal Kaptures</title>
 </head>

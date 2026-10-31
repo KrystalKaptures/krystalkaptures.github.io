@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#071126">
     <link rel="icon" type="image/png" href="../favicon.png">
     <link rel="stylesheet" href="style.css?v=2">
-    <link rel="stylesheet" href="../site-chrome.css?v=1">
+  <link rel="stylesheet" href="../site-chrome.css?v=2">
     <title>FunTimes | Krystal Kaptures</title>
 </head>
 <body>
@@ -19,7 +19,10 @@
             <img src="../assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
         </a>
         <nav class="kk-site-nav" aria-label="Primary navigation">
-            <a href="./" aria-current="page"><span class="kk-live-dot" aria-hidden="true"></span> FunTimes</a>
+            <a class="header-funtime" data-kk-funtime-clock href="./" aria-current="page" aria-label="Open FunTimes">
+                <span class="header-clock-label"><i class="kk-live-dot" aria-hidden="true"></i> FunTimes</span>
+                <time datetime="">--:--</time>
+            </a>
         </nav>
     </header>
 
@@ -135,7 +138,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <footer class="kk-site-footer">
-        <p><span class="kk-footer-spark" aria-hidden="true">✦</span> Small patterns. Proper celebrations.</p>
+        <p><span class="kk-footer-spark" aria-hidden="true">✦</span> A little magic, always.</p>
         <div class="kk-footer-links">
             <a href="https://www.instagram.com/krystalkaptures/">Instagram</a><span aria-hidden="true">·</span>
             <a href="https://www.twitch.tv/krystalkaptures">Twitch</a><span aria-hidden="true">·</span>
@@ -143,6 +146,7 @@
         </div>
     </footer>
 
+    <script src="../site-chrome.js?v=1"></script>
     <script src="script.js?v=2"></script>
 </body>
 </html>

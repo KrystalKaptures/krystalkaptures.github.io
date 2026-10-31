@@ -67,55 +67,7 @@ a {
 .star-three { top: 52%; right: 5%; font-size: 1.15rem; animation-delay: -2s; }
 .star-four { top: 71%; left: 4%; font-size: 2rem; animation-delay: -0.7s; }
 
-.site-header {
-  width: min(1120px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 24px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.brand img {
-  display: block;
-  width: 184px;
-  height: auto;
-}
-
-nav {
-  display: flex;
-  gap: 8px;
-  padding: 5px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(4, 12, 29, 0.5);
-  backdrop-filter: blur(14px);
-}
-
-nav a {
-  padding: 7px 15px;
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
-}
-
-nav a:hover,
-nav a:focus-visible,
-nav a[aria-current="page"] {
-  color: #fff;
-  background: rgba(121, 230, 255, 0.13);
-}
-
-nav a:hover {
-  transform: translateY(-1px);
-}
-
-main,
-footer {
+main {
   width: min(1120px, calc(100% - 40px));
   margin-inline: auto;
 }
@@ -569,36 +521,6 @@ blockquote {
   animation: sparkle-pop 850ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-footer {
-  padding: 30px 0 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  border-top: 1px solid var(--line);
-  color: #8395b5;
-  font-size: 0.78rem;
-}
-
-footer p {
-  margin: 0;
-}
-
-footer div {
-  display: flex;
-  gap: 11px;
-}
-
-footer a {
-  color: #afc4e4;
-  text-decoration: none;
-}
-
-footer a:hover,
-footer a:focus-visible {
-  color: var(--blue);
-}
-
 @keyframes twinkle {
   to { opacity: 0.28; transform: scale(0.82); }
 }
@@ -661,22 +583,8 @@ footer a:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .site-header,
-  main,
-  footer {
+  main {
     width: min(100% - 28px, 1120px);
-  }
-
-  .site-header {
-    padding-top: 16px;
-  }
-
-  .brand img {
-    width: 145px;
-  }
-
-  nav a {
-    padding: 6px 11px;
   }
 
   .hero {
@@ -723,10 +631,6 @@ footer a:focus-visible {
     margin-left: 0;
   }
 
-  footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

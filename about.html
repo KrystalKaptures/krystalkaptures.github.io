@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#081329">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="about.css?v=3">
-  <link rel="stylesheet" href="site-chrome.css?v=1">
+  <link rel="stylesheet" href="site-chrome.css?v=2">
   <title>About Krystal | Krystal Kaptures</title>
 </head>
 <body>
@@ -28,7 +28,10 @@
       <img src="assets/krystal-kaptures-logo-light.png" alt="Krystal Kaptures">
     </a>
     <nav class="kk-site-nav" aria-label="Primary navigation">
-      <a href="klock/"><span class="kk-live-dot" aria-hidden="true"></span> FunTimes</a>
+      <a class="header-funtime" data-kk-funtime-clock href="klock/" aria-label="Open FunTimes">
+        <span class="header-clock-label"><i class="kk-live-dot" aria-hidden="true"></i> FunTimes</span>
+        <time datetime="">--:--</time>
+      </a>
     </nav>
   </header>
 
@@ -121,7 +124,7 @@
   </main>
 
   <footer class="kk-site-footer">
-    <p><span class="kk-footer-spark" aria-hidden="true">✦</span> Made with curiosity, pixels, and probably a FunTime.</p>
+    <p><span class="kk-footer-spark" aria-hidden="true">✦</span> A little magic, always.</p>
     <div class="kk-footer-links">
       <a href="https://www.instagram.com/krystalkaptures/">Instagram</a>
       <span aria-hidden="true">·</span>
@@ -131,6 +134,7 @@
     </div>
   </footer>
 
+  <script src="site-chrome.js?v=1"></script>
   <script src="daily-words.js?v=5"></script>
   <script>
     const magicButton = document.querySelector('.magic-button');
